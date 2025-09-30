@@ -148,3 +148,5 @@ dist
 # Backup files
 *.bak
 *.backup
+.claude/
+CLAUDE.md
