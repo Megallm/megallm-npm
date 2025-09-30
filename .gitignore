@@ -134,3 +134,17 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# MegaLLM Configuration (for development)
+.claude/settings.local.json
+.codex/config.toml
+
+# IDE
+.DS_Store
+*.swp
+*.swo
+*~
+
+# Backup files
+*.bak
+*.backup

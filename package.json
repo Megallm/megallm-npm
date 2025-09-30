@@ -1,0 +1,44 @@
+{
+  "name": "megallm-setup",
+  "version": "1.0.0",
+  "description": "Setup tool for configuring Claude Code and Codex to use MegaLLM AI service",
+  "main": "src/cli.js",
+  "bin": {
+    "megallm-setup": "./bin/index.js"
+  },
+  "scripts": {
+    "start": "node bin/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "megallm",
+    "claude",
+    "codex",
+    "ai",
+    "setup",
+    "cli",
+    "configuration"
+  ],
+  "author": "MegaLLM",
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "inquirer": "^9.2.12",
+    "ora": "^6.3.1",
+    "fs-extra": "^11.2.0",
+    "toml": "^3.0.0",
+    "@iarna/toml": "^2.2.5",
+    "figlet": "^1.7.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/megallm-claude-code.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/megallm-claude-code/issues"
+  },
+  "homepage": "https://github.com/yourusername/megallm-claude-code#readme"
+}
