@@ -39,6 +39,7 @@ async function configureCodex(apiKey, level = 'system') {
     const newConfig = {
       ...existingConfig,
       model_provider: 'megallm',
+      model: 'gpt-5',
       model_providers: {
         ...existingConfig.model_providers,
         megallm: {
