@@ -190,7 +190,7 @@ api_key = "your-api-key-here"
 
 ## 📚 Documentation
 
-- MegaLLM Documentation: [https://megallm.io/docs](https://megallm.io/docs)
+- MegaLLM Documentation: [https://docs.megallm.io/](https://docs.megallm.io/)
 - Claude Code Docs: [https://docs.claude.com/claude-code](https://docs.claude.com/claude-code)
 - Codex/Windsurf Docs: [https://docs.codeium.com](https://docs.codeium.com)
 

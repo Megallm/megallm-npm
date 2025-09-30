@@ -211,7 +211,7 @@ async function main() {
     }
 
     console.log(chalk.cyan('\n📚 Need help?'));
-    console.log(chalk.gray('  • Documentation: https://megallm.io/docs'));
+    console.log(chalk.gray('  • Documentation: https://docs.megallm.io/'));
     console.log(chalk.gray('  • Support: support@megallm.io'));
 
     console.log(chalk.cyan('\n✨ Thank you for using MegaLLM!\n'));
