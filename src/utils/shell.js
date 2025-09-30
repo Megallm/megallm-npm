@@ -10,7 +10,6 @@ function reloadShell() {
 
   if (platform === 'win32') {
     console.log(chalk.yellow('\n⚠ Please restart your terminal to apply the changes.'));
-    console.log(chalk.gray('Or run: refreshenv (if available)'));
     return false;
   }
 
@@ -18,31 +17,26 @@ function reloadShell() {
     const shell = process.env.SHELL || '/bin/bash';
     const shellName = shell.split('/').pop();
 
-    console.log(chalk.cyan(`\n🔄 Reloading ${shellName} configuration...`));
+    console.log(chalk.cyan(`\n🔄 Shell configuration updated`));
+    console.log(chalk.yellow(`⚠ Please restart your terminal or run:`));
 
-    let reloadCommand;
     switch (shellName) {
       case 'zsh':
-        reloadCommand = `source ~/.zshrc`;
+        console.log(chalk.white(`   source ~/.zshrc`));
         break;
       case 'bash':
-        reloadCommand = `source ~/.bashrc`;
+        console.log(chalk.white(`   source ~/.bashrc`));
         break;
       case 'fish':
-        reloadCommand = `source ~/.config/fish/config.fish`;
+        console.log(chalk.white(`   source ~/.config/fish/config.fish`));
         break;
       default:
-        reloadCommand = `source ~/.bashrc`;
+        console.log(chalk.white(`   source ~/.bashrc`));
     }
-
-    console.log(chalk.gray(`Running: ${reloadCommand}`));
-    console.log(chalk.yellow('\n⚠ You may need to restart your terminal or run:'));
-    console.log(chalk.white(`   ${reloadCommand}`));
 
     return true;
   } catch (error) {
-    console.log(chalk.yellow('\n⚠ Could not automatically reload shell configuration.'));
-    console.log(chalk.yellow('Please restart your terminal to apply the changes.'));
+    console.log(chalk.yellow('\n⚠ Please restart your terminal to apply the changes.'));
     return false;
   }
 }

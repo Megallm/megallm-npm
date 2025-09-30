@@ -86,22 +86,22 @@ export async function promptApiKey(toolName = '') {
 
 export async function confirmConfiguration(config) {
   console.log(chalk.cyan('\n📋 Configuration Summary:'));
-  console.log(chalk.gray('─'.repeat(40)));
+  console.log(chalk.white('═'.repeat(40)));
 
   if (config.tool) {
-    console.log(chalk.white(`Tool: ${config.tool}`));
+    console.log(chalk.white(`  Tool: ${config.tool}`));
   }
   if (config.level) {
-    console.log(chalk.white(`Level: ${config.level}`));
+    console.log(chalk.white(`  Level: ${config.level}`));
   }
   if (config.baseUrl) {
-    console.log(chalk.white(`Base URL: ${config.baseUrl}`));
+    console.log(chalk.white(`  Base URL: ${config.baseUrl}`));
   }
   if (config.apiKey) {
-    console.log(chalk.white(`API Key: ${config.apiKey.substring(0, 10)}...${config.apiKey.slice(-4)}`));
+    console.log(chalk.white(`  API Key: ${config.apiKey.substring(0, 10)}...${config.apiKey.slice(-4)}`));
   }
 
-  console.log(chalk.gray('─'.repeat(40)));
+  console.log(chalk.white('═'.repeat(40)));
 
   const confirmed = await confirm({
     message: 'Proceed with this configuration?',

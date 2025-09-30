@@ -25,7 +25,7 @@ async function showBanner() {
   console.log(chalk.cyan(banner));
   console.log(chalk.cyan('      Setup Tool for Claude Code & Codex'));
   console.log(chalk.gray('      Configure your AI tools to use MegaLLM\n'));
-  console.log(chalk.gray('─'.repeat(50)));
+  console.log(chalk.gray('═'.repeat(50)));
 }
 
 // Main setup flow
@@ -158,8 +158,7 @@ async function main() {
     console.log(chalk.gray('  • Documentation: https://megallm.io/docs'));
     console.log(chalk.gray('  • Support: support@megallm.io'));
 
-    console.log(chalk.gray('\n─'.repeat(50)));
-    console.log(chalk.cyan('Thank you for using MegaLLM! 🚀\n'));
+    console.log(chalk.cyan('\n✨ Thank you for using MegaLLM!\n'));
 
   } catch (error) {
     console.error(chalk.red(`\n❌ Error: ${error.message}`));
