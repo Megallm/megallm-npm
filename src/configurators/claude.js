@@ -9,7 +9,7 @@ import {
   ensureDirectory
  } from '../utils/files.js';
 import { getLastNCharacters } from '../utils/shell.js';
-import { MEGALLM_BASE_URL } from '../constants.js';
+import { MEGALLM_BASE_URL, CONFIG_PATHS } from '../constants.js';
 import { getConfigPath } from '../detectors/os.js';
 
 async function configureClaude(apiKey, level = 'system') {
@@ -31,7 +31,7 @@ async function configureClaude(apiKey, level = 'system') {
     // Read existing config or create new
     let existingConfig = await readJsonFile(configPath) || {};
 
-    // Prepare new configuration
+    // Prepare new configuration for settings.json
     const newConfig = {
       env: {
         ...existingConfig.env,
@@ -40,36 +40,48 @@ async function configureClaude(apiKey, level = 'system') {
       }
     };
 
+    // Merge configurations for settings.json
+    const finalConfig = await mergeJsonConfig(existingConfig, newConfig);
+
+    spinner.text = `Writing configuration to ${configPath}...`;
+
+    // Write the settings.json configuration
+    await writeJsonFile(configPath, finalConfig, true);
+
+    // Now handle the .claude.json file for customApiKeyResponses
+    const claudeJsonPath = CONFIG_PATHS.claude.apiKeys;
+    spinner.text = `Updating API key approval in ${claudeJsonPath}...`;
+
+    // Read existing .claude.json or create new
+    let claudeJson = await readJsonFile(claudeJsonPath) || {};
+
     // Add API key approval for Claude Code
     const last20Chars = getLastNCharacters(apiKey, 20);
-    if (!newConfig.customApiKeyResponses) {
-      newConfig.customApiKeyResponses = {
+
+    if (!claudeJson.customApiKeyResponses) {
+      claudeJson.customApiKeyResponses = {
         approved: [],
         rejected: []
       };
     }
 
     // Add to approved if not already there
-    if (!newConfig.customApiKeyResponses.approved) {
-      newConfig.customApiKeyResponses.approved = [];
+    if (!claudeJson.customApiKeyResponses.approved) {
+      claudeJson.customApiKeyResponses.approved = [];
     }
-    if (!newConfig.customApiKeyResponses.approved.includes(last20Chars)) {
-      newConfig.customApiKeyResponses.approved.push(last20Chars);
+    if (!claudeJson.customApiKeyResponses.approved.includes(last20Chars)) {
+      claudeJson.customApiKeyResponses.approved.push(last20Chars);
     }
 
-    // Merge configurations
-    const finalConfig = await mergeJsonConfig(existingConfig, newConfig);
-
-    spinner.text = `Writing configuration to ${configPath}...`;
-
-    // Write the configuration
-    await writeJsonFile(configPath, finalConfig, true);
+    // Write the .claude.json file
+    await writeJsonFile(claudeJsonPath, claudeJson, true);
 
     spinner.succeed(chalk.green('Claude Code configured successfully!'));
 
     // Show additional instructions
     console.log(chalk.cyan('\n📝 Configuration Details:'));
-    console.log(chalk.gray(`  Config file: ${configPath}`));
+    console.log(chalk.gray(`  Settings file: ${configPath}`));
+    console.log(chalk.gray(`  API keys file: ${claudeJsonPath}`));
     console.log(chalk.gray(`  Base URL: ${MEGALLM_BASE_URL}`));
     console.log(chalk.gray(`  API Key: ${apiKey.substring(0, 10)}...${apiKey.slice(-4)}`));
 
