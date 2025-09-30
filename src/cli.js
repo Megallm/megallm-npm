@@ -161,8 +161,16 @@ async function main() {
     console.log(chalk.cyan('\n✨ Thank you for using MegaLLM!\n'));
 
   } catch (error) {
+    // Handle user cancellation gracefully
+    if (error.message && error.message.includes('User force closed')) {
+      console.log(chalk.yellow('\n\n👋 Setup cancelled. See you next time!'));
+      process.exit(0);
+    }
+
     console.error(chalk.red(`\n❌ Error: ${error.message}`));
-    console.error(chalk.gray(error.stack));
+    if (process.env.DEBUG) {
+      console.error(chalk.gray(error.stack));
+    }
     process.exit(1);
   }
 }
@@ -173,9 +181,24 @@ process.on('unhandledRejection', (reason, promise) => {
   process.exit(1);
 });
 
+// Clean exit on Ctrl+C
 process.on('SIGINT', () => {
-  console.log(chalk.yellow('\n\n👋 Setup interrupted. Goodbye!'));
+  console.log(chalk.yellow('\n\n👋 Setup cancelled.'));
   process.exit(0);
+});
+
+// Clean exit on termination
+process.on('SIGTERM', () => {
+  console.log(chalk.yellow('\n\n👋 Setup terminated.'));
+  process.exit(0);
+});
+
+// Handle ESC key
+process.stdin.on('keypress', (str, key) => {
+  if (key && key.name === 'escape') {
+    console.log(chalk.yellow('\n\n👋 Setup cancelled.'));
+    process.exit(0);
+  }
 });
 
 // Run the CLI
