@@ -1,10 +1,10 @@
 {
-  "name": "megallm-setup",
+  "name": "megallm",
   "version": "1.0.0",
   "description": "Setup tool for configuring Claude Code and Codex to use MegaLLM AI service",
   "main": "src/cli.js",
   "bin": {
-    "megallm-setup": "./bin/index.js"
+    "megallm": "./bin/index.js"
   },
   "scripts": {
     "start": "node bin/index.js",
@@ -35,10 +35,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/megallm-claude-code.git"
+    "url": "https://github.com/priyanshu/megallm-claude-code.git"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/megallm-claude-code/issues"
+    "url": "https://github.com/priyanshu/megallm-claude-code/issues"
   },
-  "homepage": "https://github.com/yourusername/megallm-claude-code#readme"
+  "homepage": "https://github.com/priyanshu/megallm-claude-code#readme"
 }
