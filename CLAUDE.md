@@ -19,7 +19,7 @@ npm start
 
 # Test the NPX command locally
 npm link
-megallm-setup
+megallm
 
 # Run with debug output
 DEBUG=* npm start
@@ -39,7 +39,7 @@ npm version patch|minor|major
 npm publish
 
 # Test the published package
-npx megallm-setup@latest
+npx megallm@latest
 ```
 
 ## Code Architecture

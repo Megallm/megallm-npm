@@ -1,6 +1,6 @@
 {
   "name": "megallm",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Setup tool for configuring Claude Code and Codex to use MegaLLM AI service",
   "main": "src/cli.js",
   "bin": {
@@ -22,9 +22,9 @@
   "author": "MegaLLM",
   "license": "MIT",
   "dependencies": {
-    "chalk": "^5.3.0",
-    "inquirer": "^9.2.12",
-    "ora": "^6.3.1",
+    "chalk": "^4.1.2",
+    "inquirer": "^8.2.6",
+    "ora": "^5.4.1",
     "fs-extra": "^11.2.0",
     "toml": "^3.0.0",
     "@iarna/toml": "^2.2.5",

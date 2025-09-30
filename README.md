@@ -17,14 +17,14 @@
 No installation required! Simply run:
 
 ```bash
-npx megallm-setup
+npx megallm
 ```
 
 Or install globally:
 
 ```bash
-npm install -g megallm-setup
-megallm-setup
+npm install -g megallm
+megallm
 ```
 
 ## 🔧 What It Does
@@ -84,7 +84,7 @@ The MegaLLM setup tool will:
 
 3. **Run the setup tool**:
    ```bash
-   npx megallm-setup
+   npx megallm
    ```
 
 4. **Follow the interactive prompts**:
@@ -108,10 +108,10 @@ The MegaLLM setup tool will:
 
 ```bash
 # Run with debug output
-DEBUG=* npx megallm-setup
+DEBUG=* npx megallm
 
 # Skip banner
-NO_BANNER=1 npx megallm-setup
+NO_BANNER=1 npx megallm
 ```
 
 ### Manual Configuration
@@ -186,7 +186,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 💬 Support
 
 - Email: support@megallm.io
-- GitHub Issues: [https://github.com/megallm/megallm-setup/issues](https://github.com/megallm/megallm-setup/issues)
+- GitHub Issues: [https://github.com/megallm/megallm/issues](https://github.com/megallm/megallm/issues)
 - Discord: [Join our community](https://discord.gg/megallm)
 
 ## 🙏 Acknowledgments
