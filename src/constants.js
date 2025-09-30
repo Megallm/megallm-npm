@@ -1,10 +1,10 @@
 // Constants for MegaLLM setup
-const os = require('os');
-const path = require('path');
+import os from 'os';
+import path from 'path';
 
-const MEGALLM_BASE_URL = 'https://ai.megallm.io';
+export const MEGALLM_BASE_URL = 'https://ai.megallm.io';
 
-const CONFIG_PATHS = {
+export const CONFIG_PATHS = {
   claude: {
     user: path.join(os.homedir(), '.claude', 'settings.json'),
     project: '.claude/settings.json',
@@ -16,28 +16,20 @@ const CONFIG_PATHS = {
   }
 };
 
-const SHELL_CONFIG_FILES = {
+export const SHELL_CONFIG_FILES = {
   bash: '.bashrc',
   zsh: '.zshrc',
   fish: '.config/fish/config.fish',
   powershell: 'Microsoft.PowerShell_profile.ps1'
 };
 
-const TOOLS = {
+export const TOOLS = {
   CLAUDE_CODE: 'Claude Code',
   CODEX: 'Codex',
   BOTH: 'Both'
 };
 
-const SETUP_LEVELS = {
+export const SETUP_LEVELS = {
   PROJECT: 'Project-level',
   SYSTEM: 'System-level'
-};
-
-module.exports = {
-  MEGALLM_BASE_URL,
-  CONFIG_PATHS,
-  SHELL_CONFIG_FILES,
-  TOOLS,
-  SETUP_LEVELS
 };

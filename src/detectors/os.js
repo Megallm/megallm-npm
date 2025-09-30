@@ -1,8 +1,9 @@
 // OS Detection Module
-const os = require('os');
-const { execSync } = require('child_process');
-const fs = require('fs');
-const path = require('path');
+import os from 'os';
+import { execSync } from 'child_process';
+import fs from 'fs';
+import path from 'path';
+import { CONFIG_PATHS, SHELL_CONFIG_FILES } from '../constants.js';
 
 function detectOS() {
   const platform = os.platform();
@@ -87,8 +88,6 @@ function getLinuxDistro() {
 }
 
 function getConfigPath(tool, level) {
-  const { CONFIG_PATHS } = require('./constants');
-
   if (tool === 'claude') {
     if (level === 'system') {
       return CONFIG_PATHS.claude.user;
@@ -110,8 +109,6 @@ function getShellConfigFile() {
   const shell = detectShell();
   const homeDir = os.homedir();
 
-  const { SHELL_CONFIG_FILES } = require('./constants');
-
   switch (shell) {
     case 'zsh':
       return path.join(homeDir, SHELL_CONFIG_FILES.zsh);
@@ -127,9 +124,7 @@ function getShellConfigFile() {
   }
 }
 
-module.exports = {
-  detectOS,
-  detectShell,
-  getConfigPath,
-  getShellConfigFile
-};
+export { detectOS };
+export { detectShell };
+export { getConfigPath };
+export { getShellConfigFile };

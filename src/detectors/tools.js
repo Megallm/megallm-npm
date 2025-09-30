@@ -1,8 +1,8 @@
 // Tool Detection Module
-const { execSync } = require('child_process');
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
+import { execSync } from 'child_process';
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
 
 function isClaudeCodeInstalled() {
   // Check for Claude Code installation
@@ -149,9 +149,7 @@ function getInstalledTools() {
   return tools;
 }
 
-module.exports = {
-  isClaudeCodeInstalled,
-  isCodexInstalled,
-  checkToolsStatus,
-  getInstalledTools
-};
+export { isClaudeCodeInstalled };
+export { isCodexInstalled };
+export { checkToolsStatus };
+export { getInstalledTools };

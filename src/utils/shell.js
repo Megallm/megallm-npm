@@ -1,7 +1,9 @@
 // Shell Command Utilities
-const { execSync } = require('child_process');
-const os = require('os');
-const chalk = require('chalk');
+import { execSync } from 'child_process';
+import os from 'os';
+import fs from 'fs';
+import chalk from 'chalk';
+import { getShellConfigFile } from '../detectors/os.js';
 
 function reloadShell() {
   const platform = os.platform();
@@ -60,10 +62,8 @@ function setEnvironmentVariable(key, value, persistent = true) {
       return true;
     } else {
       // Unix-like systems - append to shell config
-      const { getShellConfigFile } = require('../detectors/os');
       const shellConfigFile = getShellConfigFile();
 
-      const fs = require('fs');
       const exportLine = `\n# MegaLLM Configuration\nexport ${key}="${value}"\n`;
 
       // Check if already exists and update or append
@@ -120,10 +120,8 @@ function getLastNCharacters(str, n = 20) {
   return str.slice(-n);
 }
 
-module.exports = {
-  reloadShell,
-  setEnvironmentVariable,
-  getEnvironmentVariable,
-  validateApiKey,
-  getLastNCharacters
-};
+export { reloadShell };
+export { setEnvironmentVariable };
+export { getEnvironmentVariable };
+export { validateApiKey };
+export { getLastNCharacters };

@@ -1,6 +1,6 @@
 // File Operations Utilities
-const fs = require('fs-extra');
-const path = require('path');
+import fs from 'fs-extra';
+import path from 'path';
 
 async function readJsonFile(filePath) {
   try {
@@ -35,7 +35,7 @@ async function writeJsonFile(filePath, data, backup = true) {
 
 async function readTomlFile(filePath) {
   try {
-    const TOML = require('@iarna/toml');
+    const TOML = await import('@iarna/toml');
     const content = await fs.readFile(filePath, 'utf8');
     return TOML.parse(content);
   } catch (error) {
@@ -48,7 +48,7 @@ async function readTomlFile(filePath) {
 
 async function writeTomlFile(filePath, data, backup = true) {
   try {
-    const TOML = require('@iarna/toml');
+    const TOML = await import('@iarna/toml');
 
     // Create directory if it doesn't exist
     await fs.ensureDir(path.dirname(filePath));
@@ -97,12 +97,10 @@ async function backupFile(filePath) {
   return null;
 }
 
-module.exports = {
-  readJsonFile,
-  writeJsonFile,
-  readTomlFile,
-  writeTomlFile,
-  mergeJsonConfig,
-  ensureDirectory,
-  backupFile
-};
+export { readJsonFile };
+export { writeJsonFile };
+export { readTomlFile };
+export { writeTomlFile };
+export { mergeJsonConfig };
+export { ensureDirectory };
+export { backupFile };

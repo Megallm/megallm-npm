@@ -1,27 +1,28 @@
 #!/usr/bin/env node
 
 // Main CLI for MegaLLM Setup
-const chalk = require('chalk');
-const ora = require('ora');
-const figlet = require('figlet');
-const { detectOS } = require('./detectors/os');
-const { getInstalledTools, checkToolsStatus } = require('./detectors/tools');
-const {
+import chalk from 'chalk';
+import ora from 'ora';
+import figlet from 'figlet';
+import { detectOS } from './detectors/os.js';
+import { getInstalledTools, checkToolsStatus } from './detectors/tools.js';
+import {
   promptToolSelection,
   promptSetupLevel,
   promptApiKey,
   confirmConfiguration,
   promptRetry
-} = require('./utils/prompts');
-const { configureClaude } = require('./configurators/claude');
-const { configureCodex } = require('./configurators/codex');
-const { reloadShell, setEnvironmentVariable } = require('./utils/shell');
-const { MEGALLM_BASE_URL, SETUP_LEVELS } = require('./constants');
+} from './utils/prompts.js';
+import { configureClaude } from './configurators/claude.js';
+import { configureCodex } from './configurators/codex.js';
+import { reloadShell, setEnvironmentVariable } from './utils/shell.js';
+import { MEGALLM_BASE_URL, SETUP_LEVELS } from './constants.js';
 
 // ASCII Art for branding
-function showBanner() {
+async function showBanner() {
   console.clear();
-  console.log(chalk.cyan(figlet.textSync('MegaLLM', { horizontalLayout: 'default' })));
+  const banner = figlet.textSync('MegaLLM', { horizontalLayout: 'default' });
+  console.log(chalk.cyan(banner));
   console.log(chalk.cyan('      Setup Tool for Claude Code & Codex'));
   console.log(chalk.gray('      Configure your AI tools to use MegaLLM\n'));
   console.log(chalk.gray('─'.repeat(50)));
@@ -29,7 +30,7 @@ function showBanner() {
 
 // Main setup flow
 async function main() {
-  showBanner();
+  await showBanner();
 
   try {
     // Step 1: Detect OS
@@ -179,8 +180,8 @@ process.on('SIGINT', () => {
 });
 
 // Run the CLI
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   main();
 }
 
-module.exports = main;
+export default main;

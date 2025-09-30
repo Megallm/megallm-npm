@@ -1,22 +1,22 @@
 // Claude Code Configuration Module
-const path = require('path');
-const chalk = require('chalk');
-const ora = require('ora');
-const {
+import path from 'path';
+import chalk from 'chalk';
+import ora from 'ora';
+import {
   readJsonFile,
   writeJsonFile,
   mergeJsonConfig,
   ensureDirectory
-} = require('../utils/files');
-const { getLastNCharacters } = require('../utils/shell');
-const { MEGALLM_BASE_URL } = require('../constants');
+ } from '../utils/files.js';
+import { getLastNCharacters } from '../utils/shell.js';
+import { MEGALLM_BASE_URL } from '../constants.js';
+import { getConfigPath } from '../detectors/os.js';
 
 async function configureClaude(apiKey, level = 'system') {
   const spinner = ora('Configuring Claude Code...').start();
 
   try {
     // Determine config path based on level
-    const { getConfigPath } = require('../detectors/os');
     const configPath = getConfigPath('claude', level);
 
     if (!configPath) {
@@ -93,7 +93,7 @@ async function configureClaude(apiKey, level = 'system') {
 }
 
 async function addToGitignore(pattern) {
-  const fs = require('fs-extra');
+  const { default: fs } = await import('fs-extra');
   const gitignorePath = '.gitignore';
 
   try {
@@ -140,7 +140,5 @@ async function verifyClaudeConfig(configPath) {
   }
 }
 
-module.exports = {
-  configureClaude,
-  verifyClaudeConfig
-};
+export { configureClaude };
+export { verifyClaudeConfig };

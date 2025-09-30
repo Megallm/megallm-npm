@@ -1,20 +1,20 @@
 // Codex Configuration Module
-const path = require('path');
-const chalk = require('chalk');
-const ora = require('ora');
-const {
+import path from 'path';
+import chalk from 'chalk';
+import ora from 'ora';
+import {
   readTomlFile,
   writeTomlFile,
   ensureDirectory
-} = require('../utils/files');
-const { MEGALLM_BASE_URL } = require('../constants');
+ } from '../utils/files.js';
+import { MEGALLM_BASE_URL } from '../constants.js';
+import { getConfigPath } from '../detectors/os.js';
 
 async function configureCodex(apiKey, level = 'system') {
   const spinner = ora('Configuring Codex...').start();
 
   try {
     // Determine config path based on level
-    const { getConfigPath } = require('../detectors/os');
     const configPath = getConfigPath('codex', level);
 
     if (!configPath) {
@@ -97,7 +97,7 @@ async function configureCodex(apiKey, level = 'system') {
 }
 
 async function isWindsurf() {
-  const fs = require('fs-extra');
+  const { default: fs } = await import('fs-extra');
 
   if (process.platform === 'darwin') {
     return await fs.pathExists('/Applications/Windsurf.app');
@@ -110,7 +110,7 @@ async function isWindsurf() {
 }
 
 async function addToGitignore(pattern) {
-  const fs = require('fs-extra');
+  const { default: fs } = await import('fs-extra');
   const gitignorePath = '.gitignore';
 
   try {
@@ -159,8 +159,6 @@ async function verifyCodexConfig(configPath) {
   }
 }
 
-module.exports = {
-  configureCodex,
-  verifyCodexConfig,
-  isWindsurf
-};
+export { configureCodex };
+export { verifyCodexConfig };
+export { isWindsurf };
