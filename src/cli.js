@@ -2,7 +2,6 @@
 
 // Main CLI for MegaLLM Setup
 import chalk from 'chalk';
-import ora from 'ora';
 import figlet from 'figlet';
 import { detectOS } from './detectors/os.js';
 import { getInstalledTools, checkToolsStatus } from './detectors/tools.js';

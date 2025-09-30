@@ -14,13 +14,38 @@
 
 ## 📦 Installation & Usage
 
-No installation required! Simply run:
+### Quick Start
+
+```bash
+npx megallm@latest
+```
+
+### Windows Users (PowerShell)
+
+If you encounter issues with PowerShell, try:
+
+```powershell
+# Clear npm cache first
+npm cache clean --force
+
+# Use with explicit version
+npx megallm@latest
+
+# Or use cmd.exe
+cmd /c "npx megallm"
+
+# Or install globally
+npm install -g megallm@latest
+megallm
+```
+
+### macOS/Linux Users
 
 ```bash
 npx megallm
 ```
 
-Or install globally:
+### Global Installation
 
 ```bash
 npm install -g megallm
