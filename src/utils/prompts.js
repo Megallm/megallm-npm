@@ -5,13 +5,13 @@ import { TOOLS, SETUP_LEVELS } from '../constants.js';
 
 export async function promptToolSelection(availableTools) {
   if (availableTools.length === 0) {
-    console.log(chalk.yellow('\n⚠ No tools installed yet, but you can still set up configuration.'));
+    console.log(chalk.yellow('\n⚠ Tools have been installed, now let\'s configure them.'));
 
     const tool = await select({
       message: 'Which tool would you like to configure?',
       choices: [
         { name: 'Claude Code', value: 'claude' },
-        { name: 'Windsurf (Codex)', value: 'codex' },
+        { name: 'Codex', value: 'codex' },
         { name: 'Both', value: 'both' }
       ]
     });

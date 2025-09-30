@@ -12,6 +12,7 @@ import {
   confirmConfiguration,
   promptRetry
 } from './utils/prompts.js';
+import { select, confirm } from '@inquirer/prompts';
 import { installClaudeCode, installCodex, promptInstallation } from './utils/installer.js';
 import { configureClaude } from './configurators/claude.js';
 import { configureCodex } from './configurators/codex.js';
@@ -55,8 +56,7 @@ async function main() {
     }
 
     if (toolsStatus.codex.installed) {
-      const name = toolsStatus.codex.isWindsurf ? 'Codex (Windsurf)' : 'Codex';
-      console.log(chalk.green(`✓ ${name} detected`));
+      console.log(chalk.green(`✓ Codex detected`));
       if (toolsStatus.codex.configPath) {
         console.log(chalk.gray(`  Config: ${toolsStatus.codex.configPath}`));
       }
@@ -67,39 +67,54 @@ async function main() {
     // If no tools are installed, offer to install them
     if (!toolsStatus.anyInstalled) {
       console.log(chalk.yellow('\n⚠ No supported tools are installed.'));
-      console.log(chalk.cyan('MegaLLM supports Claude Code and Windsurf (Codex).'));
+      console.log(chalk.cyan('MegaLLM supports Claude Code and Codex.'));
 
-      // Ask if they want to install Claude Code
-      if (!toolsStatus.claude.installed) {
-        const shouldInstallClaude = await promptInstallation('Claude Code');
-        if (shouldInstallClaude) {
+      // Ask if they want to install any tools
+      const wantsToInstall = await confirm({
+        message: 'Would you like to install AI tools now?',
+        default: true
+      });
+
+      if (wantsToInstall) {
+        // Show installation options
+        const installChoice = await select({
+          message: 'What would you like to install?',
+          choices: [
+            { name: 'Claude Code (@anthropic-ai/claude-code)', value: 'claude' },
+            { name: 'Codex (@openai/codex)', value: 'codex' },
+            { name: 'Both Claude Code and Codex', value: 'both' }
+          ]
+        });
+
+        // Install based on choice
+        if (installChoice === 'claude' || installChoice === 'both') {
           const installed = await installClaudeCode();
           if (installed) {
-            // Recheck status after installation
             toolsStatus = checkToolsStatus();
             installedTools = getInstalledTools();
           }
         }
-      }
 
-      // Ask if they want to install Codex/Windsurf
-      if (!toolsStatus.codex.installed) {
-        const shouldInstallCodex = await promptInstallation('Windsurf (Codex)');
-        if (shouldInstallCodex) {
+        if (installChoice === 'codex' || installChoice === 'both') {
           const installed = await installCodex();
           if (installed) {
-            // Recheck status after installation
             toolsStatus = checkToolsStatus();
             installedTools = getInstalledTools();
           }
         }
-      }
 
-      // Final check after installations
-      if (!checkToolsStatus().anyInstalled) {
-        console.log(chalk.red('\n❌ No tools installed. Please install Claude Code or Windsurf and try again.'));
-        console.log(chalk.gray('  Claude Code: https://claude.ai/download'));
-        console.log(chalk.gray('  Windsurf: https://codeium.com/windsurf/download'));
+        // Final check after installations
+        if (!checkToolsStatus().anyInstalled) {
+          console.log(chalk.red('\n❌ Installation failed. Please install manually:'));
+          console.log(chalk.gray('  Claude Code: npm install -g @anthropic-ai/claude-code'));
+          console.log(chalk.gray('  Codex: npm install -g @openai/codex'));
+          process.exit(1);
+        }
+      } else {
+        console.log(chalk.red('\n❌ No tools available for configuration.'));
+        console.log(chalk.gray('You can install them manually:'));
+        console.log(chalk.gray('  Claude Code: npm install -g @anthropic-ai/claude-code'));
+        console.log(chalk.gray('  Codex: npm install -g @openai/codex'));
         process.exit(1);
       }
     }
