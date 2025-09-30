@@ -4,7 +4,7 @@
 import chalk from 'chalk';
 import figlet from 'figlet';
 import { detectOS } from './detectors/os.js';
-import { getInstalledTools, checkToolsStatus } from './detectors/tools.js';
+import { getInstalledTools, checkToolsStatus, isClaudeCodeInstalled, isCodexInstalled } from './detectors/tools.js';
 import {
   promptToolSelection,
   promptSetupLevel,
@@ -12,6 +12,7 @@ import {
   confirmConfiguration,
   promptRetry
 } from './utils/prompts.js';
+import { installClaudeCode, installCodex, promptInstallation } from './utils/installer.js';
 import { configureClaude } from './configurators/claude.js';
 import { configureCodex } from './configurators/codex.js';
 import { reloadShell, setEnvironmentVariable } from './utils/shell.js';
@@ -40,9 +41,10 @@ async function main() {
 
     // Step 2: Check installed tools
     console.log(chalk.cyan('\n🔍 Checking installed tools...'));
-    const toolsStatus = checkToolsStatus();
-    const installedTools = getInstalledTools();
+    let toolsStatus = checkToolsStatus();
+    let installedTools = getInstalledTools();
 
+    // Show current status
     if (toolsStatus.claude.installed) {
       console.log(chalk.green(`✓ Claude Code detected`));
       if (toolsStatus.claude.configPath) {
@@ -60,6 +62,46 @@ async function main() {
       }
     } else {
       console.log(chalk.yellow(`✗ Codex not found`));
+    }
+
+    // If no tools are installed, offer to install them
+    if (!toolsStatus.anyInstalled) {
+      console.log(chalk.yellow('\n⚠ No supported tools are installed.'));
+      console.log(chalk.cyan('MegaLLM supports Claude Code and Windsurf (Codex).'));
+
+      // Ask if they want to install Claude Code
+      if (!toolsStatus.claude.installed) {
+        const shouldInstallClaude = await promptInstallation('Claude Code');
+        if (shouldInstallClaude) {
+          const installed = await installClaudeCode();
+          if (installed) {
+            // Recheck status after installation
+            toolsStatus = checkToolsStatus();
+            installedTools = getInstalledTools();
+          }
+        }
+      }
+
+      // Ask if they want to install Codex/Windsurf
+      if (!toolsStatus.codex.installed) {
+        const shouldInstallCodex = await promptInstallation('Windsurf (Codex)');
+        if (shouldInstallCodex) {
+          const installed = await installCodex();
+          if (installed) {
+            // Recheck status after installation
+            toolsStatus = checkToolsStatus();
+            installedTools = getInstalledTools();
+          }
+        }
+      }
+
+      // Final check after installations
+      if (!checkToolsStatus().anyInstalled) {
+        console.log(chalk.red('\n❌ No tools installed. Please install Claude Code or Windsurf and try again.'));
+        console.log(chalk.gray('  Claude Code: https://claude.ai/download'));
+        console.log(chalk.gray('  Windsurf: https://codeium.com/windsurf/download'));
+        process.exit(1);
+      }
     }
 
     // Step 3: Tool selection

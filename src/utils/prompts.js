@@ -5,25 +5,14 @@ import { TOOLS, SETUP_LEVELS } from '../constants.js';
 
 export async function promptToolSelection(availableTools) {
   if (availableTools.length === 0) {
-    console.log(chalk.yellow('\n⚠ No supported tools found installed.'));
-    console.log(chalk.cyan('Please install Claude Code or Codex first.'));
+    console.log(chalk.yellow('\n⚠ No tools installed yet, but you can still set up configuration.'));
 
-    const proceed = await confirm({
-      message: 'Would you like to set up configuration anyway?',
-      default: false
-    });
-
-    if (!proceed) {
-      return null;
-    }
-
-    // Allow manual selection
     const tool = await select({
       message: 'Which tool would you like to configure?',
       choices: [
-        { name: 'Claude Code', value: TOOLS.CLAUDE_CODE },
-        { name: 'Codex', value: TOOLS.CODEX },
-        { name: 'Both', value: TOOLS.BOTH }
+        { name: 'Claude Code', value: 'claude' },
+        { name: 'Windsurf (Codex)', value: 'codex' },
+        { name: 'Both', value: 'both' }
       ]
     });
 
