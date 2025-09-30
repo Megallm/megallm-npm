@@ -9,13 +9,14 @@ import {
  } from '../utils/files.js';
 import { MEGALLM_BASE_URL } from '../constants.js';
 import { getConfigPath } from '../detectors/os.js';
+import { setEnvironmentVariable } from '../utils/shell.js';
 
 async function configureCodex(apiKey, level = 'system') {
   const spinner = ora('Configuring Codex...').start();
 
   try {
-    // Determine config path based on level
-    const configPath = getConfigPath('codex', level);
+    // Force system-level configuration only for Codex
+    const configPath = getConfigPath('codex', 'system');
 
     if (!configPath) {
       throw new Error('Could not determine Codex configuration path');
@@ -29,27 +30,30 @@ async function configureCodex(apiKey, level = 'system') {
     // Read existing config or create new
     let existingConfig = await readTomlFile(configPath) || {};
 
-    // Prepare new configuration structure for Codex
+    // Remove any existing model_provider if it exists
+    if (existingConfig.model_provider) {
+      delete existingConfig.model_provider;
+    }
+
+    // Prepare new configuration structure for Codex with MegaLLM model provider
     const newConfig = {
       ...existingConfig,
-      api: {
-        ...existingConfig.api,
-        base_url: MEGALLM_BASE_URL,
-        api_key: apiKey,
-        provider: 'custom'
-      },
-      auth: {
-        ...existingConfig.auth,
-        provider: 'custom',
-        endpoint: MEGALLM_BASE_URL,
-        api_key: apiKey
-      },
-      model: {
-        ...existingConfig.model,
-        provider: 'anthropic-compatible',
-        base_url: MEGALLM_BASE_URL
+      model_provider: 'megallm',
+      model_providers: {
+        ...existingConfig.model_providers,
+        megallm: {
+          name: 'OpenAI using Chat Completions',
+          base_url: 'https://ai.megallm.io/v1',
+          env_key: 'MEGALLM_API_KEY',
+          query_params: {}
+        }
       }
     };
+
+    // Remove old api, auth, and model sections if they exist
+    delete newConfig.api;
+    delete newConfig.auth;
+    delete newConfig.model;
 
     // Add additional Codex-specific settings
     if (!newConfig.tools) {
@@ -65,22 +69,19 @@ async function configureCodex(apiKey, level = 'system') {
     // Write the TOML configuration
     await writeTomlFile(configPath, newConfig, true);
 
+    // Set the MEGALLM_API_KEY environment variable
+    spinner.text = 'Setting MEGALLM_API_KEY environment variable...';
+    setEnvironmentVariable('MEGALLM_API_KEY', apiKey, true);
+
     spinner.succeed(chalk.green('Codex configured successfully!'));
 
     // Show additional instructions
     console.log(chalk.cyan('\n📝 Configuration Details:'));
     console.log(chalk.gray(`  Config file: ${configPath}`));
-    console.log(chalk.gray(`  Base URL: ${MEGALLM_BASE_URL}`));
-    console.log(chalk.gray(`  API Key: ${apiKey.substring(0, 10)}...${apiKey.slice(-4)}`));
-
-    // Special instructions for project-level config
-    if (level === 'project') {
-      console.log(chalk.yellow('\n⚠ Note: Project-level configuration created.'));
-      console.log(chalk.gray('  This will only apply to the current project.'));
-
-      // Add to .gitignore
-      await addToGitignore('.codex/config.toml');
-    }
+    console.log(chalk.gray(`  Model Provider: megallm`));
+    console.log(chalk.gray(`  Base URL: https://ai.megallm.io/v1`));
+    console.log(chalk.gray(`  API Key (env): MEGALLM_API_KEY=${apiKey.substring(0, 10)}...${apiKey.slice(-4)}`));
+    console.log(chalk.gray(`  Config Level: System (global)`));
 
     // Additional Windsurf-specific instructions if detected
     if (await isWindsurf()) {
@@ -137,18 +138,37 @@ async function verifyCodexConfig(configPath) {
       return { valid: false, error: 'Configuration file not found' };
     }
 
-    const hasBaseUrl = config.api?.base_url === MEGALLM_BASE_URL ||
-                       config.auth?.endpoint === MEGALLM_BASE_URL;
-    const hasApiKey = (config.api?.api_key && config.api?.api_key.length > 0) ||
-                      (config.auth?.api_key && config.auth?.api_key.length > 0);
+    // Check for new model provider structure
+    const hasModelProvider = config.model_provider === 'megallm';
+    const hasMegallmConfig = config.model_providers?.megallm?.base_url === 'https://ai.megallm.io/v1';
+    const hasEnvKey = config.model_providers?.megallm?.env_key === 'MEGALLM_API_KEY';
 
-    if (!hasBaseUrl || !hasApiKey) {
+    // Also check if MEGALLM_API_KEY is set in environment
+    const { getEnvironmentVariable } = await import('../utils/shell.js');
+    const apiKeySet = !!getEnvironmentVariable('MEGALLM_API_KEY');
+
+    if (!hasModelProvider || !hasMegallmConfig || !hasEnvKey) {
       return {
         valid: false,
         error: 'Configuration incomplete',
         details: {
-          baseUrl: hasBaseUrl,
-          apiKey: hasApiKey
+          modelProvider: hasModelProvider,
+          megallmConfig: hasMegallmConfig,
+          envKey: hasEnvKey,
+          apiKeySet: apiKeySet
+        }
+      };
+    }
+
+    if (!apiKeySet) {
+      return {
+        valid: false,
+        error: 'MEGALLM_API_KEY environment variable not set',
+        details: {
+          modelProvider: hasModelProvider,
+          megallmConfig: hasMegallmConfig,
+          envKey: hasEnvKey,
+          apiKeySet: false
         }
       };
     }

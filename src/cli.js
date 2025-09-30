@@ -129,7 +129,15 @@ async function main() {
     }
 
     // Step 4: Setup level selection
-    const setupLevel = await promptSetupLevel();
+    // For Codex, always use system-level
+    let setupLevel;
+    if (selectedTool === 'codex') {
+      console.log(chalk.cyan('\n📋 Configuration Level:'));
+      console.log(chalk.gray('  Codex/Windsurf only supports system-level configuration'));
+      setupLevel = SETUP_LEVELS.SYSTEM;
+    } else {
+      setupLevel = await promptSetupLevel();
+    }
 
     // Step 5: API Key input
     const apiKey = await promptApiKey();
