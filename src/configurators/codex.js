@@ -51,10 +51,9 @@ async function configureCodex(apiKey, level = 'system') {
       }
     };
 
-    // Remove old api, auth, and model sections if they exist
+    // Remove old api and auth sections if they exist (but keep model)
     delete newConfig.api;
     delete newConfig.auth;
-    delete newConfig.model;
 
     // Add additional Codex-specific settings
     if (!newConfig.tools) {
@@ -80,6 +79,7 @@ async function configureCodex(apiKey, level = 'system') {
     console.log(chalk.cyan('\n📝 Configuration Details:'));
     console.log(chalk.gray(`  Config file: ${configPath}`));
     console.log(chalk.gray(`  Model Provider: megallm`));
+    console.log(chalk.gray(`  Model: gpt-5`));
     console.log(chalk.gray(`  Base URL: https://ai.megallm.io/v1`));
     console.log(chalk.gray(`  API Key (env): MEGALLM_API_KEY=${apiKey.substring(0, 10)}...${apiKey.slice(-4)}`));
     console.log(chalk.gray(`  Config Level: System (global)`));
