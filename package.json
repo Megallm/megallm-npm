@@ -1,12 +1,19 @@
 {
   "name": "megallm",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Setup tool for configuring Claude Code and Codex to use MegaLLM AI service",
   "main": "src/cli.js",
   "type": "module",
   "bin": {
     "megallm": "./bin/index.js"
   },
+  "files": [
+    "bin/",
+    "src/",
+    "README.md",
+    "LICENSE",
+    "CLAUDE.md"
+  ],
   "scripts": {
     "start": "node bin/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"

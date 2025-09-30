@@ -22,7 +22,8 @@ function isClaudeCodeInstalled() {
 
   // Also check for the claude CLI command
   try {
-    execSync('which claude', { stdio: 'ignore' });
+    const command = process.platform === 'win32' ? 'where claude' : 'which claude';
+    execSync(command, { stdio: 'ignore' });
     return {
       installed: true,
       path: claudeDir,
@@ -66,7 +67,8 @@ function isCodexInstalled() {
 
   // Also check for the codex CLI command
   try {
-    execSync('which codex', { stdio: 'ignore' });
+    const command = process.platform === 'win32' ? 'where codex' : 'which codex';
+    execSync(command, { stdio: 'ignore' });
     return {
       installed: true,
       path: codexDir,

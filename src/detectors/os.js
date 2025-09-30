@@ -40,17 +40,16 @@ function detectOS() {
 
 function detectShell() {
   // Detect the user's default shell
+  if (process.platform === 'win32') {
+    if (process.env.PSModulePath) return 'powershell';
+    return 'cmd';
+  }
+
   const shell = process.env.SHELL || '';
 
   if (shell.includes('zsh')) return 'zsh';
   if (shell.includes('bash')) return 'bash';
   if (shell.includes('fish')) return 'fish';
-
-  // Windows detection
-  if (process.platform === 'win32') {
-    if (process.env.PSModulePath) return 'powershell';
-    return 'cmd';
-  }
 
   return 'bash'; // Default fallback
 }
