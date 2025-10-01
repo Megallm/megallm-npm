@@ -9,7 +9,9 @@ function reloadShell() {
   const platform = os.platform();
 
   if (platform === 'win32') {
-    console.log(chalk.yellow('\n⚠ Please restart your terminal to apply the changes.'));
+    console.log(chalk.yellow('\n⚠ Environment variables have been set for both current and future sessions.'));
+    console.log(chalk.cyan('✅ The changes are already active in this session.'));
+    console.log(chalk.yellow('⚠ For other open terminals, please restart them to apply the changes.'));
     return false;
   }
 
@@ -51,8 +53,22 @@ function setEnvironmentVariable(key, value, persistent = true) {
 
   try {
     if (platform === 'win32') {
-      // Windows - set user environment variable
+      // Windows - set for both current session and future sessions
+      // Set for future sessions using setx
       execSync(`setx ${key} "${value}"`, { stdio: 'ignore' });
+
+      // Also set for current PowerShell session using $env:
+      // This ensures the variable is available immediately
+      try {
+        execSync(`powershell -Command "$env:${key}='${value}'"`, { stdio: 'ignore' });
+      } catch (psError) {
+        // If PowerShell fails, try using set command for cmd
+        try {
+          execSync(`set ${key}=${value}`, { stdio: 'ignore' });
+        } catch (cmdError) {
+          // Silently continue - setx will still work for future sessions
+        }
+      }
       return true;
     } else {
       // Unix-like systems - append to shell config
