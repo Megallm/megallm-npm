@@ -7,6 +7,7 @@
 - **Auto-detection** of installed AI tools (Claude Code, Codex/Windsurf)
 - **OS-aware** configuration for macOS, Linux, and Windows
 - **Interactive setup** with user-friendly prompts
+- **Guided API key creation** with automatic browser opening
 - **Project or system-level** configuration options
 - **Automatic backup** of existing configurations
 - **Environment variable** management
@@ -58,16 +59,20 @@ The MegaLLM setup tool will:
 
 1. **Detect your operating system** and shell environment
 2. **Check for installed tools** (Claude Code, Codex)
-3. **Prompt for configuration choices**:
+3. **Guide you through API key setup**:
+   - Ask if you have a MegaLLM API key
+   - If not, automatically open https://megallm.io in your browser
+   - Provide step-by-step instructions to create an API key
+   - Wait for you to enter the key when ready
+4. **Prompt for configuration choices**:
    - Which tool to configure (Claude Code/Codex/Both)
    - Setup level (System-wide or Project-specific)
-   - Your MegaLLM API key
-4. **Configure the selected tools** with:
+5. **Configure the selected tools** with:
    - Base URL: `https://ai.megallm.io`
    - Your API key
    - Proper authentication settings
-5. **Update environment variables** (for system-level setup)
-6. **Reload shell configuration** automatically
+6. **Update environment variables** (for system-level setup)
+7. **Reload shell configuration** automatically
 
 ## 📋 Configuration Details
 
@@ -101,24 +106,36 @@ The MegaLLM setup tool will:
 
 ## 🚀 Quick Start Guide
 
-1. **Get your MegaLLM API key** from [https://megallm.io](https://megallm.io)
-
-2. **Install Claude Code or Codex**:
-   - Claude Code: [https://claude.ai/code](https://claude.ai/code)
-   - Windsurf (includes Codex): [https://codeium.com/windsurf](https://codeium.com/windsurf)
-
-3. **Run the setup tool**:
+1. **Run the setup tool**:
    ```bash
    npx megallm
    ```
 
-4. **Follow the interactive prompts**:
+2. **Follow the interactive prompts**:
+   - The tool will ask if you have a MegaLLM API key
+   - If not, it will automatically open https://megallm.io in your browser
+   - Follow the on-screen instructions to create your API key
    - Select which tool to configure
    - Choose system or project level setup
-   - Enter your API key
+   - Enter your API key when ready
    - Confirm the configuration
 
-5. **Start using your AI tools** with MegaLLM!
+3. **Start using your AI tools** with MegaLLM!
+
+### Getting Your API Key
+
+If you don't have a MegaLLM API key yet:
+1. Visit [https://megallm.io](https://megallm.io) (the tool opens this automatically)
+2. Sign up or log in to your account
+3. Navigate to the API Keys section
+4. Create a new API key
+5. Copy and save it securely
+
+### Prerequisites
+
+- **Install Claude Code or Codex** first:
+  - Claude Code: [https://claude.ai/code](https://claude.ai/code)
+  - Windsurf (includes Codex): [https://codeium.com/windsurf](https://codeium.com/windsurf)
 
 ## 🔐 Security
 

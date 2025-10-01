@@ -71,18 +71,26 @@ npx megallm@latest
    - Detect shell (bash/zsh/fish/powershell)
    - Check for installed tools
 
-2. **User Input Phase**:
+2. **API Key Setup Phase**:
+   - Ask if user has a MegaLLM API key
+   - If not, guide through key creation:
+     - Open https://megallm.io in browser automatically
+     - Display fallback URL if browser doesn't open
+     - Show step-by-step instructions
+     - Wait for user confirmation to continue
+   - Prompt for API key entry with validation
+
+3. **User Input Phase**:
    - Select tool to configure
    - Choose setup level (system/project)
-   - Input API key
 
-3. **Configuration Phase**:
+4. **Configuration Phase**:
    - Read existing configurations
    - Merge with new settings
    - Write updated configurations
    - Create backups
 
-4. **Finalization Phase**:
+5. **Finalization Phase**:
    - Set environment variables
    - Update shell configuration
    - Provide success feedback
@@ -123,6 +131,29 @@ endpoint = "https://ai.megallm.io"
 - Claude: `.claude/settings.json` or `.claude/settings.local.json`
 - Codex: `.codex/config.toml`
 
+## Key Features
+
+### API Key Creation Flow
+
+The tool now includes a comprehensive API key creation workflow:
+
+1. **Automatic Detection**: Asks if the user has an API key
+2. **Browser Integration**: Opens MegaLLM website automatically for key creation
+3. **Fallback Support**: Displays URL if browser fails to open
+4. **Step-by-Step Guide**: Shows clear instructions for key creation
+5. **Confirmation Flow**: Waits for user readiness before proceeding
+
+### Browser Opening Logic
+
+```javascript
+// Cross-platform browser opening
+const openCommand = process.platform === 'darwin' ? 'open' :
+                   process.platform === 'win32' ? 'start' :
+                   'xdg-open';
+
+exec(`${openCommand} https://megallm.io`);
+```
+
 ## Testing Checklist
 
 When making changes, test:
@@ -138,13 +169,19 @@ When making changes, test:
    - [ ] Windsurf installed
    - [ ] No tools installed
 
-3. **Configuration**:
+3. **API Key Flow**:
+   - [ ] User has API key (direct entry)
+   - [ ] User needs to create key (browser opens)
+   - [ ] Browser fails to open (shows URL)
+   - [ ] User cancels key creation
+
+4. **Configuration**:
    - [ ] System-level setup
    - [ ] Project-level setup
    - [ ] Existing config merge
    - [ ] Backup creation
 
-4. **Error Handling**:
+5. **Error Handling**:
    - [ ] Invalid API key
    - [ ] Missing permissions
    - [ ] Network errors

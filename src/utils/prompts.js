@@ -56,6 +56,50 @@ export async function promptSetupLevel() {
 }
 
 export async function promptApiKey(toolName = '') {
+  // First ask if they have an API key
+  const hasKey = await confirm({
+    message: "Do you have a MegaLLM API key?",
+    default: false
+  });
+
+  if (!hasKey) {
+    // Open browser and show instructions
+    console.log(chalk.cyan('\n🔑 Let\'s create your MegaLLM API key!'));
+    console.log(chalk.white('═'.repeat(50)));
+    console.log(chalk.yellow('\nOpening MegaLLM in your browser...'));
+    console.log(chalk.white('\n📌 If the browser doesn\'t open automatically, visit:'));
+    console.log(chalk.cyan.bold('   https://megallm.io\n'));
+
+    // Try to open browser
+    const openCommand = process.platform === 'darwin' ? 'open' :
+                       process.platform === 'win32' ? 'start' :
+                       'xdg-open';
+
+    try {
+      const { exec } = await import('child_process');
+      exec(`${openCommand} https://megallm.io`);
+    } catch (error) {
+      console.log(chalk.yellow('⚠ Could not open browser automatically.'));
+    }
+
+    console.log(chalk.white('═'.repeat(50)));
+    console.log(chalk.green('\n✅ Steps to get your API key:'));
+    console.log(chalk.white('  1. Sign up or log in to MegaLLM'));
+    console.log(chalk.white('  2. Navigate to the API Keys section'));
+    console.log(chalk.white('  3. Create a new API key'));
+    console.log(chalk.white('  4. Copy the key and paste it below\n'));
+
+    const continueSetup = await confirm({
+      message: "Ready to enter your API key?",
+      default: true
+    });
+
+    if (!continueSetup) {
+      console.log(chalk.yellow('\n⚠ Setup cancelled. Run this tool again when you have your API key.'));
+      process.exit(0);
+    }
+  }
+
   const apiKey = await password({
     message: `Enter your MegaLLM API key${toolName ? ` for ${toolName}` : ''}:`,
     mask: '*',
