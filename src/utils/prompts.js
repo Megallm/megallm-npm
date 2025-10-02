@@ -161,7 +161,7 @@ export async function promptExistingConfigAction(locations) {
     console.log(chalk.gray(`  • ${location}`));
   });
 
-  console.log(chalk.white('\n═'.repeat(50)));
+  console.log(chalk.white('\n' + '═'.repeat(50)));
 
   const action = await select({
     message: 'What would you like to do?',
@@ -192,7 +192,7 @@ export async function confirmOverride(locations) {
     console.log(chalk.yellow(`  • ${location}`));
   });
 
-  console.log(chalk.white('\n═'.repeat(50)));
+  console.log(chalk.white('\n' + '═'.repeat(50)));
   console.log(chalk.yellow('This action cannot be undone!'));
 
   const confirmed = await confirm({
