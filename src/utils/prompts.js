@@ -152,3 +152,53 @@ export async function promptRetry(message = 'Would you like to try again?') {
 
   return retry;
 }
+
+export async function promptExistingConfigAction(locations) {
+  console.log(chalk.yellow('\n⚠ MegaLLM configuration already exists!'));
+  console.log(chalk.cyan('\nFound existing configuration in:'));
+
+  locations.forEach(location => {
+    console.log(chalk.gray(`  • ${location}`));
+  });
+
+  console.log(chalk.white('\n═'.repeat(50)));
+
+  const action = await select({
+    message: 'What would you like to do?',
+    choices: [
+      {
+        name: '🔄 Override - Remove old configuration and apply new settings',
+        value: 'override'
+      },
+      {
+        name: '⏭️  Skip - Keep existing configuration',
+        value: 'skip'
+      },
+      {
+        name: '❌ Cancel - Exit without changes',
+        value: 'cancel'
+      }
+    ],
+    default: 'skip'
+  });
+
+  return action;
+}
+
+export async function confirmOverride(locations) {
+  console.log(chalk.red('\n⚠️  WARNING: This will remove existing configuration from:'));
+
+  locations.forEach(location => {
+    console.log(chalk.yellow(`  • ${location}`));
+  });
+
+  console.log(chalk.white('\n═'.repeat(50)));
+  console.log(chalk.yellow('This action cannot be undone!'));
+
+  const confirmed = await confirm({
+    message: 'Are you sure you want to override the existing configuration?',
+    default: false
+  });
+
+  return confirmed;
+}

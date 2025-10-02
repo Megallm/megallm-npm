@@ -10,7 +10,9 @@ import {
   promptSetupLevel,
   promptApiKey,
   confirmConfiguration,
-  promptRetry
+  promptRetry,
+  promptExistingConfigAction,
+  confirmOverride
 } from './utils/prompts.js';
 import { select, confirm } from '@inquirer/prompts';
 import { installClaudeCode, installCodex, promptInstallation } from './utils/installer.js';
@@ -18,6 +20,7 @@ import { configureClaude } from './configurators/claude.js';
 import { configureCodex } from './configurators/codex.js';
 import { reloadShell, setEnvironmentVariable } from './utils/shell.js';
 import { MEGALLM_BASE_URL, SETUP_LEVELS } from './constants.js';
+import { checkExistingConfiguration, removeEnvVars, detectExistingEnvVars, removeConfigurationFiles } from './utils/envDetector.js';
 
 // ASCII Art for branding
 async function showBanner() {
@@ -117,6 +120,102 @@ async function main() {
         console.log(chalk.gray('  Codex: npm install -g @openai/codex'));
         process.exit(1);
       }
+    }
+
+    // Step 2.5: Check for existing MegaLLM configuration
+    console.log(chalk.cyan('\n🔍 Checking for existing MegaLLM configuration...'));
+    const existingConfig = await checkExistingConfiguration();
+    const envVars = await detectExistingEnvVars();
+
+    if (existingConfig.isConfigured && existingConfig.locations.length > 0) {
+      // Show detailed information about existing configuration
+      console.log(chalk.green('✓ MegaLLM is already configured'));
+
+      if (envVars.ANTHROPIC_BASE_URL.length > 0) {
+        console.log(chalk.cyan('\n📍 Base URL found in:'));
+        envVars.ANTHROPIC_BASE_URL.forEach(item => {
+          console.log(chalk.gray(`  • ${item.location}: ${item.value}`));
+        });
+      }
+
+      if (envVars.ANTHROPIC_API_KEY.length > 0) {
+        console.log(chalk.cyan('\n🔑 API Key found in:'));
+        envVars.ANTHROPIC_API_KEY.forEach(item => {
+          console.log(chalk.gray(`  • ${item.location}: ${item.value}`));
+        });
+      }
+
+      // Ask user what to do
+      const action = await promptExistingConfigAction(existingConfig.locations);
+
+      if (action === 'skip') {
+        console.log(chalk.green('\n✅ Keeping existing configuration.'));
+        console.log(chalk.cyan('MegaLLM is already set up and ready to use!'));
+        process.exit(0);
+      } else if (action === 'cancel') {
+        console.log(chalk.yellow('\n👋 Setup cancelled.'));
+        process.exit(0);
+      } else if (action === 'override') {
+        // Confirm override action
+        const confirmAction = await confirmOverride(existingConfig.locations);
+
+        if (!confirmAction) {
+          console.log(chalk.yellow('\n👋 Setup cancelled.'));
+          process.exit(0);
+        }
+
+        // Remove existing configuration
+        console.log(chalk.cyan('\n🧹 Removing existing configuration...'));
+
+        // Remove environment variables
+        const removeResult = await removeEnvVars();
+
+        // Remove configuration files
+        const fileRemoveResult = await removeConfigurationFiles();
+
+        // Show results
+        if (removeResult.removed.length > 0) {
+          console.log(chalk.green('✓ Removed environment variables from:'));
+          removeResult.removed.forEach(item => {
+            console.log(chalk.gray(`  • ${item.location}`));
+          });
+        }
+
+        if (fileRemoveResult.removed.length > 0) {
+          console.log(chalk.green('✓ Cleaned configuration files:'));
+          fileRemoveResult.removed.forEach(item => {
+            console.log(chalk.gray(`  • ${item.file} (${item.action})`));
+          });
+        }
+
+        if (removeResult.errors.length > 0 || fileRemoveResult.errors.length > 0) {
+          console.log(chalk.yellow('\n⚠ Some locations could not be cleaned:'));
+          [...removeResult.errors, ...fileRemoveResult.errors].forEach(error => {
+            console.log(chalk.gray(`  • ${error}`));
+          });
+        }
+
+        console.log(chalk.green('\n✓ Old configuration removed. Proceeding with new setup...'));
+      }
+    } else if (existingConfig.hasBaseUrl || existingConfig.hasApiKey) {
+      // Partial configuration exists
+      console.log(chalk.yellow('⚠ Partial configuration detected'));
+
+      if (existingConfig.hasBaseUrl && !existingConfig.baseUrlValue?.includes('megallm')) {
+        console.log(chalk.gray(`  • Base URL: ${existingConfig.baseUrlValue} (not MegaLLM)`));
+      }
+
+      const proceed = await confirm({
+        message: 'Would you like to update the configuration to use MegaLLM?',
+        default: true
+      });
+
+      if (!proceed) {
+        console.log(chalk.yellow('\n👋 Setup cancelled.'));
+        process.exit(0);
+      }
+    } else {
+      console.log(chalk.gray('✓ No existing MegaLLM configuration found'));
     }
 
     // Step 3: Tool selection

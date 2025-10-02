@@ -11,6 +11,31 @@ import { MEGALLM_BASE_URL } from '../constants.js';
 import { getConfigPath } from '../detectors/os.js';
 import { setEnvironmentVariable } from '../utils/shell.js';
 
+async function checkExistingCodexConfig() {
+  const results = {
+    hasConfig: false,
+    locations: [],
+    configs: []
+  };
+
+  // Check system-level configuration (Codex only uses system level)
+  const systemPath = getConfigPath('codex', 'system');
+  if (systemPath) {
+    const systemConfig = await readTomlFile(systemPath);
+
+    // Check if MegaLLM is configured
+    if (systemConfig?.model_provider === 'megallm' ||
+        systemConfig?.model_providers?.megallm ||
+        systemConfig?.api?.base_url?.includes('megallm')) {
+      results.hasConfig = true;
+      results.locations.push(`System: ${systemPath}`);
+      results.configs.push({ path: systemPath, config: systemConfig });
+    }
+  }
+
+  return results;
+}
+
 async function configureCodex(apiKey, level = 'system') {
   const spinner = ora('Configuring Codex...').start();
 
@@ -183,3 +208,4 @@ async function verifyCodexConfig(configPath) {
 export { configureCodex };
 export { verifyCodexConfig };
 export { isWindsurf };
+export { checkExistingCodexConfig };

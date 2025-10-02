@@ -12,6 +12,47 @@ import { getLastNCharacters } from '../utils/shell.js';
 import { MEGALLM_BASE_URL, CONFIG_PATHS } from '../constants.js';
 import { getConfigPath } from '../detectors/os.js';
 
+async function checkExistingClaudeConfig() {
+  const results = {
+    hasConfig: false,
+    locations: [],
+    configs: []
+  };
+
+  // Check system-level configuration
+  const systemPath = getConfigPath('claude', 'system');
+  if (systemPath) {
+    const systemConfig = await readJsonFile(systemPath);
+    if (systemConfig?.env?.ANTHROPIC_BASE_URL || systemConfig?.env?.ANTHROPIC_API_KEY) {
+      results.hasConfig = true;
+      results.locations.push(`System: ${systemPath}`);
+      results.configs.push({ path: systemPath, config: systemConfig });
+    }
+  }
+
+  // Check project-level configuration
+  const projectPath = getConfigPath('claude', 'project');
+  if (projectPath) {
+    const projectConfig = await readJsonFile(projectPath);
+    if (projectConfig?.env?.ANTHROPIC_BASE_URL || projectConfig?.env?.ANTHROPIC_API_KEY) {
+      results.hasConfig = true;
+      results.locations.push(`Project: ${projectPath}`);
+      results.configs.push({ path: projectPath, config: projectConfig });
+    }
+  }
+
+  // Check API keys file
+  const apiKeysPath = CONFIG_PATHS.claude.apiKeys;
+  const apiKeysConfig = await readJsonFile(apiKeysPath);
+  if (apiKeysConfig?.customApiKeyResponses?.approved?.length > 0) {
+    results.hasConfig = true;
+    results.locations.push(`API Keys: ${apiKeysPath}`);
+    results.configs.push({ path: apiKeysPath, config: apiKeysConfig });
+  }
+
+  return results;
+}
+
 async function configureClaude(apiKey, level = 'system') {
   const spinner = ora('Configuring Claude Code...').start();
 
@@ -154,3 +195,4 @@ async function verifyClaudeConfig(configPath) {
 
 export { configureClaude };
 export { verifyClaudeConfig };
+export { checkExistingClaudeConfig };
