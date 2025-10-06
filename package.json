@@ -1,6 +1,6 @@
 {
   "name": "megallm",
-  "version": "2.5.9-beta.1",
+  "version": "2.5.9",
   "description": "Setup tool for configuring Claude Code and Codex to use MegaLLM AI service",
   "main": "src/cli.js",
   "type": "module",
