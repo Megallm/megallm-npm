@@ -135,7 +135,7 @@ If you don't have a MegaLLM API key yet:
 
 - **Install Claude Code or Codex** first:
   - Claude Code: [https://claude.ai/code](https://claude.ai/code)
-  - Windsurf (includes Codex): [https://codeium.com/windsurf](https://codeium.com/windsurf)
+  - Codex: [https://openai.com/codex](https://openai.com/codex/))
 
 ## 🔐 Security
 
@@ -209,7 +209,6 @@ api_key = "your-api-key-here"
 
 - MegaLLM Documentation: [https://docs.megallm.io/](https://docs.megallm.io/)
 - Claude Code Docs: [https://docs.claude.com/claude-code](https://docs.claude.com/claude-code)
-- Codex/Windsurf Docs: [https://docs.codeium.com](https://docs.codeium.com)
 
 ## 🤝 Contributing
 
@@ -228,7 +227,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 💬 Support
 
 - Email: support@megallm.io
-- GitHub Issues: [https://github.com/megallm/megallm/issues](https://github.com/megallm/megallm/issues)
+- GitHub Issues: [https://github.com/megallm/megallm-npm/issues](https://github.com/Megallm/megallm-npm/issues)
 - Discord: [Join our community](https://discord.gg/megallm)
 
 ## 🙏 Acknowledgments
