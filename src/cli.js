@@ -67,6 +67,10 @@ async function main() {
       console.log(chalk.yellow(`✗ Codex not found`));
     }
 
+    // Check if we need to offer installation
+    const claudeInstalled = toolsStatus.claude.installed;
+    const codexInstalled = toolsStatus.codex.installed;
+
     // If no tools are installed, offer to install them
     if (!toolsStatus.anyInstalled) {
       console.log(chalk.yellow('\n⚠ No supported tools are installed.'));
@@ -119,6 +123,58 @@ async function main() {
         console.log(chalk.gray('  Claude Code: npm install -g @anthropic-ai/claude-code'));
         console.log(chalk.gray('  Codex: npm install -g @openai/codex'));
         process.exit(1);
+      }
+    }
+    // If some tools are installed but not all, offer to install missing ones
+    else if (!claudeInstalled || !codexInstalled) {
+      console.log(chalk.cyan('\n💡 Additional tools available'));
+
+      if (!claudeInstalled) {
+        console.log(chalk.gray('  • Claude Code - Not installed'));
+      }
+      if (!codexInstalled) {
+        console.log(chalk.gray('  • Codex - Not installed'));
+      }
+
+      const wantsMore = await confirm({
+        message: 'Would you like to install the missing tool(s)?',
+        default: false
+      });
+
+      if (wantsMore) {
+        // Build installation choices for missing tools
+        const installChoices = [];
+        if (!claudeInstalled) {
+          installChoices.push({ name: 'Claude Code (@anthropic-ai/claude-code)', value: 'claude' });
+        }
+        if (!codexInstalled) {
+          installChoices.push({ name: 'Codex (@openai/codex)', value: 'codex' });
+        }
+        if (!claudeInstalled && !codexInstalled) {
+          installChoices.push({ name: 'Both Claude Code and Codex', value: 'both' });
+        }
+
+        const installChoice = await select({
+          message: 'What would you like to install?',
+          choices: installChoices
+        });
+
+        // Install based on choice
+        if (installChoice === 'claude' || installChoice === 'both') {
+          const installed = await installClaudeCode();
+          if (installed) {
+            toolsStatus = checkToolsStatus();
+            installedTools = getInstalledTools();
+          }
+        }
+
+        if (installChoice === 'codex' || installChoice === 'both') {
+          const installed = await installCodex();
+          if (installed) {
+            toolsStatus = checkToolsStatus();
+            installedTools = getInstalledTools();
+          }
+        }
       }
     }
 
