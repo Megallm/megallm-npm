@@ -121,18 +121,29 @@ async function detectWindowsEnvVars(results) {
     // Registry query might fail if no admin permissions
   }
 
-  // Check PowerShell profile
-  const psProfilePath = path.join(os.homedir(), 'Documents', 'WindowsPowerShell', 'Microsoft.PowerShell_profile.ps1');
-  if (fs.existsSync(psProfilePath)) {
-    const content = fs.readFileSync(psProfilePath, 'utf8');
-    checkFileForEnvVars(content, results, 'PowerShell Profile', psProfilePath);
-  }
+  // Check all PowerShell profiles
+  const psProfiles = [
+    // Current user - Windows PowerShell 5.1
+    { name: 'PowerShell Profile', path: path.join(os.homedir(), 'Documents', 'WindowsPowerShell', 'Microsoft.PowerShell_profile.ps1') },
+    { name: 'PowerShell Profile (All Hosts)', path: path.join(os.homedir(), 'Documents', 'WindowsPowerShell', 'profile.ps1') },
 
-  // Check newer PowerShell Core profile
-  const pwshProfilePath = path.join(os.homedir(), 'Documents', 'PowerShell', 'Microsoft.PowerShell_profile.ps1');
-  if (fs.existsSync(pwshProfilePath)) {
-    const content = fs.readFileSync(pwshProfilePath, 'utf8');
-    checkFileForEnvVars(content, results, 'PowerShell Core Profile', pwshProfilePath);
+    // Current user - PowerShell Core/7+
+    { name: 'PowerShell Core Profile', path: path.join(os.homedir(), 'Documents', 'PowerShell', 'Microsoft.PowerShell_profile.ps1') },
+    { name: 'PowerShell Core Profile (All Hosts)', path: path.join(os.homedir(), 'Documents', 'PowerShell', 'profile.ps1') },
+
+    // All users profiles (may not have access)
+    { name: 'PowerShell System Profile', path: path.join(process.env.ALLUSERSPROFILE || 'C:\\ProgramData', 'Microsoft', 'Windows', 'PowerShell', 'profile.ps1') }
+  ];
+
+  for (const profile of psProfiles) {
+    if (fs.existsSync(profile.path)) {
+      try {
+        const content = fs.readFileSync(profile.path, 'utf8');
+        checkFileForEnvVars(content, results, profile.name, profile.path);
+      } catch (error) {
+        // May not have permission to read some profiles
+      }
+    }
   }
 }
 
@@ -386,55 +397,113 @@ export async function removeConfigurationFiles() {
  * Remove environment variables on Windows
  */
 async function removeWindowsEnvVars(variables, results) {
+  // Step 1: Remove from Windows Registry (User)
   for (const varName of variables) {
-    // Remove from User registry
     try {
       await execAsync(`reg delete "HKEY_CURRENT_USER\\Environment" /v ${varName} /f`);
       results.removed.push({ variable: varName, location: 'Windows Registry (User)' });
     } catch (error) {
-      // Variable might not exist
+      // Variable might not exist, which is fine
     }
+  }
 
-    // Remove from System registry (requires admin)
+  // Step 2: Remove from Windows Registry (System) - requires admin
+  for (const varName of variables) {
     try {
       await execAsync(`reg delete "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Session Manager\\Environment" /v ${varName} /f`);
       results.removed.push({ variable: varName, location: 'Windows Registry (System)' });
     } catch (error) {
       // Might fail due to permissions or non-existence
+      if (error.message && !error.message.includes('not find')) {
+        results.errors.push(`System registry cleanup may require admin rights`);
+      }
     }
   }
 
-  // Remove from PowerShell profiles
+  // Step 3: Remove from current PowerShell session
+  try {
+    for (const varName of variables) {
+      await execAsync(`powershell -Command "Remove-Item Env:${varName} -ErrorAction SilentlyContinue"`);
+    }
+    results.removed.push({ variable: 'ANTHROPIC_*', location: 'Current PowerShell session' });
+  } catch (error) {
+    // Silently ignore if PowerShell command fails
+  }
+
+  // Step 4: Remove from all PowerShell profiles
   const psProfiles = [
+    // Current user - Windows PowerShell 5.1
     path.join(os.homedir(), 'Documents', 'WindowsPowerShell', 'Microsoft.PowerShell_profile.ps1'),
-    path.join(os.homedir(), 'Documents', 'PowerShell', 'Microsoft.PowerShell_profile.ps1')
+    path.join(os.homedir(), 'Documents', 'WindowsPowerShell', 'profile.ps1'),
+
+    // Current user - PowerShell Core/7+
+    path.join(os.homedir(), 'Documents', 'PowerShell', 'Microsoft.PowerShell_profile.ps1'),
+    path.join(os.homedir(), 'Documents', 'PowerShell', 'profile.ps1'),
+
+    // All users - Windows PowerShell 5.1
+    path.join(process.env.ProgramFiles || 'C:\\Program Files', 'PowerShell', '7', 'profile.ps1'),
+    path.join(process.env.ALLUSERSPROFILE || 'C:\\ProgramData', 'Microsoft', 'Windows', 'PowerShell', 'profile.ps1'),
+
+    // All users - PowerShell Core/7+
+    path.join(process.env.ProgramFiles || 'C:\\Program Files', 'PowerShell', '7', 'Microsoft.PowerShell_profile.ps1')
   ];
 
   for (const profilePath of psProfiles) {
     if (fs.existsSync(profilePath)) {
-      let content = fs.readFileSync(profilePath, 'utf8');
-      let modified = false;
+      try {
+        let content = fs.readFileSync(profilePath, 'utf8');
+        let modified = false;
 
-      for (const varName of variables) {
-        const patterns = [
-          new RegExp(`\\$env:${varName}\\s*=.*\n?`, 'g'),
-          new RegExp(`Set-Item -Path Env:${varName}.*\n?`, 'g')
-        ];
+        for (const varName of variables) {
+          const patterns = [
+            // PowerShell $env: syntax
+            new RegExp(`\\$env:${varName}\\s*=\\s*["']?[^"'\n]*["']?\\s*\n?`, 'g'),
+            // Set-Item cmdlet
+            new RegExp(`Set-Item\\s+-Path\\s+Env:${varName}\\s+-Value\\s+["']?[^"'\n]*["']?\\s*\n?`, 'g'),
+            // [Environment]::SetEnvironmentVariable
+            new RegExp(`\\[Environment\\]::SetEnvironmentVariable\\(["']${varName}["'],\\s*["'][^"']*["'],\\s*["'][^"']*["']\\)\\s*\n?`, 'g'),
+            // MegaLLM comment block with the variable
+            new RegExp(`# MegaLLM Configuration\\s*\n\\$env:${varName}\\s*=.*\n?`, 'g')
+          ];
 
-        for (const pattern of patterns) {
-          if (pattern.test(content)) {
-            content = content.replace(pattern, '');
-            modified = true;
+          for (const pattern of patterns) {
+            if (pattern.test(content)) {
+              content = content.replace(pattern, '');
+              modified = true;
+            }
           }
         }
-      }
 
-      if (modified) {
-        fs.writeFileSync(profilePath, content);
-        results.removed.push({ variable: 'ANTHROPIC_*', location: `PowerShell Profile (${profilePath})` });
+        // Clean up empty MegaLLM comment blocks
+        content = content.replace(/# MegaLLM Configuration\s*\n(?=\s*\n|$)/g, '');
+        content = content.replace(/\n{3,}/g, '\n\n'); // Remove excessive newlines
+
+        if (modified) {
+          fs.writeFileSync(profilePath, content, 'utf8');
+          results.removed.push({ variable: 'ANTHROPIC_*', location: `PowerShell Profile (${path.basename(profilePath)})` });
+        }
+      } catch (error) {
+        // May not have permission to modify some profiles
+        if (!error.message.includes('ENOENT')) {
+          results.errors.push(`Could not modify ${profilePath}: Permission denied`);
+        }
       }
     }
   }
+
+  // Step 5: Broadcast WM_SETTINGCHANGE to notify all windows of environment change
+  try {
+    await execAsync(`powershell -Command "[Environment]::SetEnvironmentVariable('MEGALLM_CLEANUP', $null, 'User')"`);
+    // This triggers a refresh of environment variables in Windows
+  } catch (error) {
+    // Ignore errors
+  }
+
+  // Step 6: Notify user to restart applications
+  console.log(chalk.yellow('\n⚠ Windows environment variables updated:'));
+  console.log(chalk.cyan('  • New terminal windows will use the updated settings'));
+  console.log(chalk.cyan('  • Existing applications may need to be restarted'));
+  console.log(chalk.cyan('  • For immediate effect, please restart your terminal/IDE'));
 }
 
 /**
