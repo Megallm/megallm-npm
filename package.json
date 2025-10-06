@@ -41,10 +41,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/priyanshu/megallm-claude-code.git"
+    "url": "https://github.com/Megallm/megallm-npm.git"
   },
   "bugs": {
-    "url": "https://github.com/priyanshu/megallm-claude-code/issues"
+    "url": "https://github.com/Megallm/megallm-npm/issues"
   },
   "homepage": "https://github.com/priyanshu/megallm-claude-code#readme"
 }
