@@ -202,3 +202,24 @@ export async function confirmOverride(locations) {
 
   return confirmed;
 }
+
+export async function promptStatuslineSetup() {
+  console.log(chalk.cyan('\n🎨 Claude Code Statusline'));
+  console.log(chalk.gray('═'.repeat(50)));
+  console.log(chalk.white('Enhance your Claude Code terminal with:'));
+  console.log(chalk.gray('  📁 Directory display with ~ abbreviation'));
+  console.log(chalk.gray('  🌿 Git branch information'));
+  console.log(chalk.gray('  🤖 Model info and version'));
+  console.log(chalk.gray('  🧠 Real-time context usage'));
+  console.log(chalk.gray('  💰 Cost tracking and burn rates'));
+  console.log(chalk.gray('  ⌛ Session timer'));
+  console.log(chalk.gray('  📊 Token analytics'));
+  console.log(chalk.gray('═'.repeat(50)));
+
+  const wantsStatusline = await confirm({
+    message: 'Would you like to setup Claude Code statusline?',
+    default: true
+  });
+
+  return wantsStatusline;
+}

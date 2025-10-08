@@ -12,12 +12,14 @@ import {
   confirmConfiguration,
   promptRetry,
   promptExistingConfigAction,
-  confirmOverride
+  confirmOverride,
+  promptStatuslineSetup
 } from './utils/prompts.js';
 import { select, confirm } from '@inquirer/prompts';
 import { installClaudeCode, installCodex, promptInstallation } from './utils/installer.js';
 import { configureClaude } from './configurators/claude.js';
 import { configureCodex } from './configurators/codex.js';
+import { configureStatusline, isStatuslineConfigured } from './configurators/statusline.js';
 import { reloadShell, setEnvironmentVariable } from './utils/shell.js';
 import { MEGALLM_BASE_URL, SETUP_LEVELS } from './constants.js';
 import { checkExistingConfiguration, removeEnvVars, detectExistingEnvVars, removeConfigurationFiles } from './utils/envDetector.js';
@@ -207,6 +209,28 @@ async function main() {
       if (action === 'skip') {
         console.log(chalk.green('\n✅ Keeping existing configuration.'));
         console.log(chalk.cyan('MegaLLM is already set up and ready to use!'));
+
+        // Check for statusline setup if Claude Code is installed
+        if (toolsStatus.claude.installed) {
+          const statuslineConfigured = await isStatuslineConfigured();
+
+          if (!statuslineConfigured) {
+            const wantsStatusline = await promptStatuslineSetup();
+
+            if (wantsStatusline) {
+              const statuslineSuccess = await configureStatusline(true);
+              if (!statuslineSuccess) {
+                console.log(chalk.yellow('\n⚠ Statusline setup was skipped.'));
+              }
+            } else {
+              console.log(chalk.gray('\n✓ Skipping statusline setup. You can set it up later with:'));
+              console.log(chalk.gray('  npx @chongdashu/cc-statusline@latest init'));
+            }
+          } else {
+            console.log(chalk.green('\n✓ Claude Code statusline is already configured'));
+          }
+        }
+
         process.exit(0);
       } else if (action === 'cancel') {
         console.log(chalk.yellow('\n👋 Setup cancelled.'));
@@ -353,6 +377,28 @@ async function main() {
       setEnvironmentVariable('ANTHROPIC_BASE_URL', MEGALLM_BASE_URL, true);
       setEnvironmentVariable('ANTHROPIC_API_KEY', apiKey, true);
       console.log(chalk.green('✓ Environment variables set'));
+    }
+
+    // Step 8.5: Ask about statusline setup (only if Claude Code was configured)
+    if (selectedTool === 'claude' || selectedTool === 'both') {
+      // Check if statusline is already configured
+      const statuslineConfigured = await isStatuslineConfigured();
+
+      if (!statuslineConfigured) {
+        const wantsStatusline = await promptStatuslineSetup();
+
+        if (wantsStatusline) {
+          const statuslineSuccess = await configureStatusline(true);
+          if (!statuslineSuccess) {
+            console.log(chalk.yellow('\n⚠ Statusline setup was skipped, but MegaLLM is configured.'));
+          }
+        } else {
+          console.log(chalk.gray('\n✓ Skipping statusline setup. You can set it up later with:'));
+          console.log(chalk.gray('  npx @chongdashu/cc-statusline@latest init'));
+        }
+      } else {
+        console.log(chalk.green('\n✓ Claude Code statusline is already configured'));
+      }
     }
 
     // Step 9: Reload shell
