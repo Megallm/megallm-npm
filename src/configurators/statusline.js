@@ -6,9 +6,9 @@ import { promisify } from 'util';
 const execAsync = promisify(exec);
 
 /**
- * Configure Claude Code's terminal statusline by running the @chongdashu/cc-statusline initializer.
- * @param {boolean} install - When true, runs the interactive initializer; when false, does nothing.
- * @returns {boolean} `true` if setup succeeded or was intentionally skipped, `false` if setup failed.
+ * Configure Claude Code statusline using @chongdashu/cc-statusline
+ * @param {boolean} install - Whether to install the statusline
+ * @returns {Promise<boolean>} Success status
  */
 export async function configureStatusline(install = false) {
   if (!install) {
