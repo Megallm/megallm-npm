@@ -96,8 +96,8 @@ export async function configureStatusline(install = false) {
 }
 
 /**
- * Check if statusline is already configured
- * @returns {Promise<boolean>} Whether statusline is configured
+ * Determine whether the Claude Code statusline is configured.
+ * @returns {Promise<boolean>} `true` if the file `~/.config/claude/statusline.sh` exists, `false` otherwise.
  */
 export async function isStatuslineConfigured() {
   try {
@@ -116,8 +116,13 @@ export async function isStatuslineConfigured() {
 }
 
 /**
- * Get statusline configuration status
- * @returns {Promise<Object>} Status object with details
+ * Retrieve the current configuration and capability status of the Claude Code statusline.
+ *
+ * @returns {Promise<Object>} An object describing statusline state:
+ *  - configured {boolean} whether the statusline script is present and configured.
+ *  - hasJq {boolean} when `configured` is true, indicates whether `jq` is available for full features.
+ *  - message {string} human-readable status message appropriate to the state.
+ *  - error {string} optional error message present when the status check failed.
  */
 export async function getStatuslineStatus() {
   try {

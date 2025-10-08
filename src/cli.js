@@ -34,7 +34,17 @@ async function showBanner() {
   console.log(chalk.gray('═'.repeat(50)));
 }
 
-// Main setup flow
+/**
+ * Run the interactive MegaLLM setup CLI to detect, install, configure, and finalize integration for Claude Code and Codex.
+ *
+ * This command-line flow detects OS and shell, checks for installed tools, offers installation of missing tools,
+ * inspects and optionally overrides existing MegaLLM configuration, prompts for tool selection and configuration level,
+ * collects an API key, applies per-tool configuration, optionally sets system environment variables, optionally
+ * configures the Claude Code statusline, reloads the user's shell, and prints final usage and help information.
+ *
+ * Note: this function performs many side effects (installing packages, modifying configuration and environment files,
+ * reloading the shell) and will call process.exit in multiple user-driven or error cases.
+ */
 async function main() {
   await showBanner();
 

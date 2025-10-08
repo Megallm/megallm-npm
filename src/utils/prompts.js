@@ -185,6 +185,13 @@ export async function promptExistingConfigAction(locations) {
   return action;
 }
 
+/**
+ * Prompt the user to confirm removing existing configuration locations.
+ *
+ * Displays each path provided, warns that the action cannot be undone, and asks the user to confirm.
+ * @param {string[]} locations - Array of configuration file paths or locations that will be removed.
+ * @returns {boolean} `true` if the user confirms overriding the existing configuration, `false` otherwise.
+ */
 export async function confirmOverride(locations) {
   console.log(chalk.red('\n⚠️  WARNING: This will remove existing configuration from:'));
 
@@ -203,6 +210,10 @@ export async function confirmOverride(locations) {
   return confirmed;
 }
 
+/**
+ * Prompt the user to confirm whether they want to set up the Claude Code statusline.
+ * @returns {boolean} `true` if the user opts in to set up the statusline, `false` otherwise.
+ */
 export async function promptStatuslineSetup() {
   console.log(chalk.cyan('\n🎨 Claude Code Statusline'));
   console.log(chalk.gray('═'.repeat(50)));
