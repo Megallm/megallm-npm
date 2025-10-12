@@ -1,166 +1,324 @@
 # MegaLLM Setup Tool
 
-🚀 A powerful NPX package to configure Claude Code and Codex to use MegaLLM AI service with a single command.
+<div align="center">
 
-## 🎯 Features
+  <h3>🚀 Configure Claude Code & Codex for MegaLLM with One Command</h3>
 
-- **Auto-detection** of installed AI tools (Claude Code, Codex/Windsurf)
-- **OS-aware** configuration for macOS, Linux, and Windows
-- **Interactive setup** with user-friendly prompts
-- **Guided API key creation** with automatic browser opening
-- **Project or system-level** configuration options
-- **Automatic backup** of existing configurations
-- **Environment variable** management
-- **Shell configuration** updates
+  [![NPM Version](https://img.shields.io/npm/v/megallm.svg)](https://www.npmjs.com/package/megallm)
+  [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+  [![Platform Support](https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey.svg)](https://github.com/Megallm/megallm-npm)
 
-## 📦 Installation & Usage
+  [**Quick Start**](#-quick-start) • [**Features**](#-features) • [**How It Works**](#-how-it-works) • [**Documentation**](#-documentation) • [**Support**](#-support)
 
-### Quick Start
+</div>
+
+---
+
+## 🎯 Quick Start
 
 ```bash
 npx megallm@latest
 ```
 
-### Windows Users (PowerShell)
+That's it! The interactive CLI will guide you through the entire setup process.
 
-If you encounter issues with PowerShell, try:
+## ✨ Features
+
+<table>
+<tr>
+<td width="50%">
+
+### 🔍 Smart Detection
+- Auto-detects installed AI tools
+- Identifies your OS and shell
+- Checks existing configurations
+
+</td>
+<td width="50%">
+
+### 🔧 Automated Setup
+- Interactive configuration wizard
+- API key creation guidance
+- Environment variable management
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+### 🔐 Secure & Safe
+- Automatic configuration backups
+- Secure API key storage
+- Project-level isolation support
+
+</td>
+<td width="50%">
+
+### 🌍 Universal Support
+- Works on macOS, Linux, Windows
+- Supports bash, zsh, fish, PowerShell
+- System or project-level configs
+
+</td>
+</tr>
+</table>
+
+## 📊 How It Works
+
+<div align="center">
+
+### 🔄 Setup Process Flow
+
+```
+┌─────────────────┐
+│  npx megallm    │
+└────────┬────────┘
+         ▼
+┌─────────────────────────────────────┐
+│     🔍 Environment Detection        │
+├─────────────────────────────────────┤
+│  • Operating System (Mac/Linux/Win) │
+│  • Shell Type (bash/zsh/fish/PS)   │
+│  • Installed Tools (Claude/Codex)   │
+└────────┬────────────────────────────┘
+         ▼
+┌─────────────────────────────────────┐
+│       🔑 API Key Setup              │
+├─────────────────────────────────────┤
+│  Have API Key?                      │
+│    ├─ No  → Opens megallm.io       │
+│    │        Shows instructions      │
+│    │        Waits for key entry    │
+│    └─ Yes → Enter API key          │
+└────────┬────────────────────────────┘
+         ▼
+┌─────────────────────────────────────┐
+│      ⚙️ Configuration Choice        │
+├─────────────────────────────────────┤
+│  Tool Selection:                    │
+│    • Claude Code only               │
+│    • Codex/Windsurf only           │
+│    • Both tools                     │
+│                                     │
+│  Setup Level:                       │
+│    • System (~/.claude, ~/.codex)   │
+│    • Project (./.claude, ./.codex)  │
+└────────┬────────────────────────────┘
+         ▼
+┌─────────────────────────────────────┐
+│      📝 Apply Configuration         │
+├─────────────────────────────────────┤
+│  • Create/update config files       │
+│  • Set environment variables        │
+│  • Backup existing configs          │
+│  • Reload shell if needed           │
+└────────┬────────────────────────────┘
+         ▼
+┌─────────────────┐
+│  ✅ Complete!   │
+└─────────────────┘
+```
+
+</div>
+
+## 📦 Installation Options
+
+<details>
+<summary><b>🚀 Quick Run (Recommended)</b></summary>
+
+```bash
+# Latest version
+npx megallm@latest
+
+# Specific version
+npx megallm@1.0.0
+```
+</details>
+
+<details>
+<summary><b>💻 Global Installation</b></summary>
+
+```bash
+# Install globally
+npm install -g megallm
+
+# Run from anywhere
+megallm
+```
+</details>
+
+<details>
+<summary><b>🪟 Windows PowerShell</b></summary>
 
 ```powershell
-# Clear npm cache first
+# Clear cache if needed
 npm cache clean --force
 
-# Use with explicit version
+# Run with explicit version
 npx megallm@latest
 
-# Or use cmd.exe
+# Alternative: Use CMD
 cmd /c "npx megallm"
+```
+</details>
 
-# Or install globally
-npm install -g megallm@latest
-megallm
+## 🔧 Configuration Details
+
+### Configuration Levels
+
+| Level | Claude Code | Codex/Windsurf | Scope |
+|-------|------------|----------------|-------|
+| **System** | `~/.claude/settings.json` | `~/.codex/config.toml` | All projects |
+| **Project** | `./.claude/settings.json` | `./.codex/config.toml` | Current project only |
+
+### What Gets Configured
+
+<table>
+<tr>
+<th>Claude Code (JSON)</th>
+<th>Codex/Windsurf (TOML)</th>
+</tr>
+<tr>
+<td>
+
+```json
+{
+  "env": {
+    "ANTHROPIC_BASE_URL": "https://ai.megallm.io",
+    "ANTHROPIC_API_KEY": "your-key"
+  },
+  "customApiKeyResponses": {
+    "approved": ["last-20-chars"]
+  }
+}
 ```
 
-### macOS/Linux Users
+</td>
+<td>
 
-```bash
-npx megallm
+```toml
+[api]
+base_url = "https://ai.megallm.io"
+api_key = "your-key"
+provider = "custom"
+
+[auth]
+provider = "custom"
+endpoint = "https://ai.megallm.io"
 ```
 
-### Global Installation
+</td>
+</tr>
+</table>
 
-```bash
-npm install -g megallm
-megallm
+## 🚦 Setup Flow
+
+### Step 1: Get Your API Key
+
+<div align="center">
+
+#### 🔐 API Key Creation Process
+
+```
+┌──────────────────────────────────────────────────────┐
+│                 User runs: npx megallm                │
+└───────────────────────┬──────────────────────────────┘
+                        ▼
+┌──────────────────────────────────────────────────────┐
+│           Tool asks: "Do you have an API key?"        │
+└───────┬───────────────────────────────────┬──────────┘
+        ▼                                   ▼
+    [No Key]                            [Has Key]
+        │                                   │
+        ▼                                   ▼
+┌──────────────────┐              ┌────────────────────┐
+│ 🌐 Browser Opens │              │ 📝 Enter API Key   │
+│   megallm.io     │              └─────────┬──────────┘
+└────────┬─────────┘                        │
+         ▼                                  │
+┌──────────────────┐                        │
+│ Create Account   │                        │
+│ Generate API Key │                        │
+└────────┬─────────┘                        │
+         ▼                                  │
+┌──────────────────┐                        │
+│ Copy API Key     │                        │
+└────────┬─────────┘                        │
+         ▼                                  ▼
+┌──────────────────────────────────────────────────────┐
+│              ✅ API Key Validated & Saved            │
+└──────────────────────────────────────────────────────┘
 ```
 
-## 🔧 What It Does
+**📋 Quick Steps:**
+1. **No API Key?** → Tool opens [megallm.io](https://megallm.io) automatically
+2. **Sign up** → Create your account (free tier available)
+3. **Generate** → Click "Create New API Key"
+4. **Copy** → Copy your key to clipboard
+5. **Paste** → Return to terminal and paste your key
+6. **Done** → Tool validates and saves your configuration
 
-The MegaLLM setup tool will:
+</div>
 
-1. **Detect your operating system** and shell environment
-2. **Check for installed tools** (Claude Code, Codex)
-3. **Guide you through API key setup**:
-   - Ask if you have a MegaLLM API key
-   - If not, automatically open https://megallm.io in your browser
-   - Provide step-by-step instructions to create an API key
-   - Wait for you to enter the key when ready
-4. **Prompt for configuration choices**:
-   - Which tool to configure (Claude Code/Codex/Both)
-   - Setup level (System-wide or Project-specific)
-5. **Configure the selected tools** with:
-   - Base URL: `https://ai.megallm.io`
-   - Your API key
-   - Proper authentication settings
-6. **Update environment variables** (for system-level setup)
-7. **Reload shell configuration** automatically
+### Step 2: Choose Your Configuration
 
-## 📋 Configuration Details
+| Question | Options | Result |
+|----------|---------|--------|
+| **Which tool?** | Claude Code / Codex / Both | Configures selected tools |
+| **Setup level?** | System / Project | Determines config location |
+| **Confirm?** | Yes / No | Applies configuration |
 
-### Claude Code Configuration
+## 📋 Prerequisites
 
-**System-level** (applies to all projects):
-- Location: `~/.claude/settings.json`
-- Sets environment variables:
-  - `ANTHROPIC_BASE_URL=https://ai.megallm.io`
-  - `ANTHROPIC_API_KEY=<your-api-key>`
+Before running the setup tool, ensure you have installed:
 
-**Project-level** (current project only):
-- Location: `.claude/settings.json` or `.claude/settings.local.json`
-- Configuration is project-specific
+<table>
+<tr>
+<td align="center">
 
-### Codex Configuration
+  ### Claude Code
 
-**System-level** (applies to all projects):
-- Location: `~/.codex/config.toml`
-- Configures API settings in TOML format
+  [Download](https://claude.ai/code)
 
-**Project-level** (current project only):
-- Location: `.codex/config.toml`
-- Configuration is project-specific
+  Desktop AI coding assistant
 
-## 🖥️ Supported Platforms
+</td>
+<td align="center">
 
-- **macOS** (10.14+)
-- **Linux** (Ubuntu, Debian, Fedora, Arch, etc.)
-- **Windows** (10/11 with PowerShell or CMD)
+  ### Codex/Windsurf
 
-## 🚀 Quick Start Guide
+  [Download](https://openai.com/codex)
 
-1. **Run the setup tool**:
-   ```bash
-   npx megallm
-   ```
+  AI-powered code editor
 
-2. **Follow the interactive prompts**:
-   - The tool will ask if you have a MegaLLM API key
-   - If not, it will automatically open https://megallm.io in your browser
-   - Follow the on-screen instructions to create your API key
-   - Select which tool to configure
-   - Choose system or project level setup
-   - Enter your API key when ready
-   - Confirm the configuration
-
-3. **Start using your AI tools** with MegaLLM!
-
-### Getting Your API Key
-
-If you don't have a MegaLLM API key yet:
-1. Visit [https://megallm.io](https://megallm.io) (the tool opens this automatically)
-2. Sign up or log in to your account
-3. Navigate to the API Keys section
-4. Create a new API key
-5. Copy and save it securely
-
-### Prerequisites
-
-- **Install Claude Code or Codex** first:
-  - Claude Code: [https://claude.ai/code](https://claude.ai/code)
-  - Codex: [https://openai.com/codex](https://openai.com/codex/))
-
-## 🔐 Security
-
-- API keys are stored securely in configuration files
-- Backup files are created before any modifications
-- Project-level configs can be added to `.gitignore`
-- The last 20 characters of API keys are approved for Claude Code
+</td>
+</tr>
+</table>
 
 ## 🛠️ Advanced Usage
 
-### Command Line Options
+### Environment Variables
 
 ```bash
-# Run with debug output
+# Enable debug output
 DEBUG=* npx megallm
 
-# Skip banner
+# Skip welcome banner
 NO_BANNER=1 npx megallm
+
+# Combine options
+DEBUG=* NO_BANNER=1 npx megallm
 ```
 
 ### Manual Configuration
 
-If you prefer manual setup, you can edit the configuration files directly:
+If you prefer manual setup, edit these files directly:
 
-**Claude Code** (`~/.claude/settings.json`):
+<details>
+<summary><b>Claude Code Configuration</b></summary>
+
+Location: `~/.claude/settings.json`
+
 ```json
 {
   "env": {
@@ -173,8 +331,13 @@ If you prefer manual setup, you can edit the configuration files directly:
   }
 }
 ```
+</details>
 
-**Codex** (`~/.codex/config.toml`):
+<details>
+<summary><b>Codex/Windsurf Configuration</b></summary>
+
+Location: `~/.codex/config.toml`
+
 ```toml
 [api]
 base_url = "https://ai.megallm.io"
@@ -186,56 +349,85 @@ provider = "custom"
 endpoint = "https://ai.megallm.io"
 api_key = "your-api-key-here"
 ```
+</details>
 
 ## 🐛 Troubleshooting
 
-### Tool not detected
-- Ensure Claude Code or Codex is properly installed
-- Check that the configuration directories exist:
+<details>
+<summary><b>Tool Not Detected</b></summary>
+
+- Ensure Claude Code or Codex is installed
+- Check configuration directories exist:
   - Claude: `~/.claude/`
   - Codex: `~/.codex/`
+- Try restarting your terminal
+</details>
 
-### Configuration not applied
-- Restart your terminal after setup
-- For project-level configs, ensure you're in the correct directory
-- Check file permissions on configuration files
+<details>
+<summary><b>Configuration Not Applied</b></summary>
 
-### API key issues
-- Ensure your API key is valid and active
-- Check for spaces or special characters
-- Verify the key has proper permissions on MegaLLM
+- Restart your terminal/shell
+- For project configs, verify you're in the right directory
+- Check file permissions: `ls -la ~/.claude/` or `~/.codex/`
+</details>
+
+<details>
+<summary><b>API Key Issues</b></summary>
+
+- Verify key is valid at [megallm.io](https://megallm.io)
+- Check for extra spaces or characters
+- Ensure key has proper permissions
+- Try regenerating the key if needed
+</details>
 
 ## 📚 Documentation
 
-- MegaLLM Documentation: [https://docs.megallm.io/](https://docs.megallm.io/)
-- Claude Code Docs: [https://docs.claude.com/claude-code](https://docs.claude.com/claude-code)
+- 📖 [MegaLLM Documentation](https://docs.megallm.io/)
+- 🤖 [Claude Code Docs](https://docs.claude.com/claude-code)
+- 💻 [API Reference](https://docs.megallm.io/api)
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+We welcome contributions! Here's how to get started:
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+```bash
+# Fork and clone
+git clone https://github.com/yourusername/megallm-npm
+cd megallm-npm
 
-## 📝 License
+# Install dependencies
+npm install
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+# Make changes and test
+npm start
+
+# Submit PR
+git push origin feature/your-feature
+```
 
 ## 💬 Support
 
-- Email: support@megallm.io
-- GitHub Issues: [https://github.com/megallm/megallm-npm/issues](https://github.com/Megallm/megallm-npm/issues)
-- Discord: [Join our community](https://discord.gg/megallm)
+<div align="center">
 
-## 🙏 Acknowledgments
+| Channel | Link |
+|---------|------|
+| 📧 **Email** | support@megallm.io |
+| 🐛 **Issues** | [GitHub Issues](https://github.com/Megallm/megallm-npm/issues) |
+| 💬 **Discord** | [Join Community](https://discord.gg/megallm) |
+| 📚 **Docs** | [Documentation](https://docs.megallm.io) |
 
-- Built with ❤️ by the MegaLLM team
-- Powered by Node.js and NPM
-- Special thanks to all contributors
+</div>
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE) file for details.
 
 ---
 
-Made with 🚀 by [MegaLLM](https://megallm.io)
+<div align="center">
+
+  **Built with ❤️ by the [MegaLLM](https://megallm.io) Team**
+
+  ⭐ Star us on [GitHub](https://github.com/Megallm/megallm-npm)
+
+</div>
