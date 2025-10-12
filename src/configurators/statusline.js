@@ -2,11 +2,14 @@
 import chalk from 'chalk';
 import { exec, spawn } from 'child_process';
 import { promisify } from 'util';
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
 
 const execAsync = promisify(exec);
 
 /**
- * Configure Claude Code statusline using @chongdashu/cc-statusline
+ * Configure statusline for Claude Code with enhanced monitoring features
  * @param {boolean} install - Whether to install the statusline
  * @returns {Promise<boolean>} Success status
  */
@@ -20,7 +23,8 @@ export async function configureStatusline(install = false) {
   try {
     // Check if Claude Code is installed first
     try {
-      await execAsync('which claude');
+      const command = process.platform === 'win32' ? 'where claude' : 'which claude';
+      await execAsync(command);
     } catch (error) {
       console.log(chalk.yellow('⚠ Claude Code is not installed. Skipping statusline setup.'));
       console.log(chalk.gray('  You can set it up later with: npx @chongdashu/cc-statusline@latest init'));
@@ -57,7 +61,8 @@ export async function configureStatusline(install = false) {
           console.log(chalk.gray('  🎨 256-color support'));
 
           // Check if jq is installed for full functionality
-          execAsync('which jq').then(() => {
+          const jqCommand = process.platform === 'win32' ? 'where jq' : 'which jq';
+          execAsync(jqCommand).then(() => {
             console.log(chalk.green('\n✓ jq is installed - All features available'));
             resolve(true);
           }).catch(() => {
@@ -102,8 +107,8 @@ export async function configureStatusline(install = false) {
 export async function isStatuslineConfigured() {
   try {
     // Check if the statusline configuration exists
-    const { stdout } = await execAsync('test -f ~/.config/claude/statusline.sh && echo "exists" || echo "not found"');
-    const result = stdout.trim() === 'exists';
+    const statuslinePath = path.join(os.homedir(), '.config', 'claude', 'statusline.sh');
+    const result = fs.existsSync(statuslinePath);
 
     if (process.env.DEBUG) {
       console.log(`[DEBUG] Statusline configured: ${result}`);
@@ -138,7 +143,8 @@ export async function getStatuslineStatus() {
     // Check if jq is installed for full features
     let hasJq = false;
     try {
-      await execAsync('which jq');
+      const jqCommand = process.platform === 'win32' ? 'where jq' : 'which jq';
+      await execAsync(jqCommand);
       hasJq = true;
     } catch (error) {
       hasJq = false;

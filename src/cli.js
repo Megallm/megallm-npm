@@ -35,6 +35,35 @@ async function showBanner() {
 }
 
 /**
+ * Handle statusline setup flow
+ * @param {Object} toolsStatus - Status of installed tools
+ * @returns {Promise<void>}
+ */
+async function handleStatuslineSetup(toolsStatus) {
+  if (!toolsStatus.claude.installed) {
+    return;
+  }
+
+  const statuslineConfigured = await isStatuslineConfigured();
+
+  if (!statuslineConfigured) {
+    const wantsStatusline = await promptStatuslineSetup();
+
+    if (wantsStatusline) {
+      const statuslineSuccess = await configureStatusline(true);
+      if (!statuslineSuccess) {
+        console.log(chalk.yellow('\n⚠ Statusline setup was skipped.'));
+      }
+    } else {
+      console.log(chalk.gray('\n✓ Skipping statusline setup. You can set it up later with:'));
+      console.log(chalk.gray('  npx @chongdashu/cc-statusline@latest init'));
+    }
+  } else {
+    console.log(chalk.green('\n✓ Claude Code statusline is already configured'));
+  }
+}
+
+/**
  * Run the interactive MegaLLM setup CLI to detect, install, configure, and finalize integration for Claude Code and Codex.
  *
  * This command-line flow detects OS and shell, checks for installed tools, offers installation of missing tools,
@@ -221,25 +250,7 @@ async function main() {
         console.log(chalk.cyan('MegaLLM is already set up and ready to use!'));
 
         // Check for statusline setup if Claude Code is installed
-        if (toolsStatus.claude.installed) {
-          const statuslineConfigured = await isStatuslineConfigured();
-
-          if (!statuslineConfigured) {
-            const wantsStatusline = await promptStatuslineSetup();
-
-            if (wantsStatusline) {
-              const statuslineSuccess = await configureStatusline(true);
-              if (!statuslineSuccess) {
-                console.log(chalk.yellow('\n⚠ Statusline setup was skipped.'));
-              }
-            } else {
-              console.log(chalk.gray('\n✓ Skipping statusline setup. You can set it up later with:'));
-              console.log(chalk.gray('  npx @chongdashu/cc-statusline@latest init'));
-            }
-          } else {
-            console.log(chalk.green('\n✓ Claude Code statusline is already configured'));
-          }
-        }
+        await handleStatuslineSetup(toolsStatus);
 
         process.exit(0);
       } else if (action === 'cancel') {
@@ -391,24 +402,7 @@ async function main() {
 
     // Step 8.5: Ask about statusline setup (only if Claude Code was configured)
     if (selectedTool === 'claude' || selectedTool === 'both') {
-      // Check if statusline is already configured
-      const statuslineConfigured = await isStatuslineConfigured();
-
-      if (!statuslineConfigured) {
-        const wantsStatusline = await promptStatuslineSetup();
-
-        if (wantsStatusline) {
-          const statuslineSuccess = await configureStatusline(true);
-          if (!statuslineSuccess) {
-            console.log(chalk.yellow('\n⚠ Statusline setup was skipped, but MegaLLM is configured.'));
-          }
-        } else {
-          console.log(chalk.gray('\n✓ Skipping statusline setup. You can set it up later with:'));
-          console.log(chalk.gray('  npx @chongdashu/cc-statusline@latest init'));
-        }
-      } else {
-        console.log(chalk.green('\n✓ Claude Code statusline is already configured'));
-      }
+      await handleStatuslineSetup(toolsStatus);
     }
 
     // Step 9: Reload shell
