@@ -411,7 +411,7 @@ git push origin feature/your-feature
 
 | Channel | Link |
 |---------|------|
-| 📧 **Email** | support@megallm.io |
+| 📧 **Email** | [support@megallm.io](mailto:support@megallm.io) |
 | 🐛 **Issues** | [GitHub Issues](https://github.com/Megallm/megallm-npm/issues) |
 | 💬 **Discord** | [Join Community](https://discord.gg/megallm) |
 | 📚 **Docs** | [Documentation](https://docs.megallm.io) |
