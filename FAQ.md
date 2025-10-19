@@ -340,7 +340,7 @@ After manual configuration:
 - **Documentation**: https://docs.megallm.io/
 - **Email Support**: support@megallm.io
 - **GitHub Issues**: https://github.com/Megallm/megallm-npm/issues
-- **Discord Community**: https://discord.gg/megallm
+- **Discord Community**: https://discord.gg/devsindia
 
 ### Debug Mode
 Run with debug output for troubleshooting:
