@@ -52,6 +52,30 @@ async function installCodex() {
   }
 }
 
+async function installOpenCode() {
+  const spinner = ora('Installing Open Code...').start();
+
+  try {
+    spinner.text = 'Installing opencode-ai globally...';
+
+    // Install OpenCode via npm
+    execSync('npm install -g opencode-ai', {
+      stdio: 'pipe',
+      encoding: 'utf8'
+    });
+
+    spinner.succeed(chalk.green('OpenCode installed successfully!'));
+    console.log(chalk.gray('  You can now use: opencode'));
+    return true;
+  } catch (error) {
+    spinner.fail(chalk.red('Failed to install OpenCode'));
+    console.error(chalk.gray(`Error: ${error.message}`));
+    console.log(chalk.yellow('\nYou can install it manually with:'));
+    console.log(chalk.white('  npm install -g opencode-ai'));
+    return false;
+  }
+}
+
 async function promptInstallation(toolName) {
   console.log(chalk.yellow(`\n⚠ ${toolName} is not installed on your system.`));
 
@@ -64,8 +88,10 @@ async function promptInstallation(toolName) {
     console.log(chalk.gray('\nYou can install it manually later:'));
     if (toolName.includes('Claude')) {
       console.log(chalk.white('  npm install -g @anthropic-ai/claude-code'));
-    } else {
+    } else if (toolName.includes('Claude')){
       console.log(chalk.white('  npm install -g @openai/codex'));
+    } else {
+      console.log(chalk.white('  npm install -g opencode-ai'))
     }
     return false;
   }
@@ -76,5 +102,6 @@ async function promptInstallation(toolName) {
 export {
   installClaudeCode,
   installCodex,
+  installOpenCode,
   promptInstallation
 };

@@ -9,7 +9,6 @@ import {
  } from '../utils/files.js';
 import { MEGALLM_BASE_URL } from '../constants.js';
 import { getConfigPath } from '../detectors/os.js';
-import { setEnvironmentVariable } from '../utils/shell.js';
 
 async function checkExistingCodexConfig() {
   const results = {
@@ -93,10 +92,6 @@ async function configureCodex(apiKey, level = 'system') {
 
     // Write the TOML configuration
     await writeTomlFile(configPath, newConfig, true);
-
-    // Set the MEGALLM_API_KEY environment variable
-    spinner.text = 'Setting MEGALLM_API_KEY environment variable...';
-    setEnvironmentVariable('MEGALLM_API_KEY', apiKey, true);
 
     spinner.succeed(chalk.green('Codex configured successfully!'));
 

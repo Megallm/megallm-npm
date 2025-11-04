@@ -99,6 +99,8 @@ function getConfigPath(tool, level) {
     }
   } else if (tool === 'codex') {
     return level === 'system' ? CONFIG_PATHS.codex.user : CONFIG_PATHS.codex.project;
+  } else if (tool === 'opencode') {
+    return level === 'system' ? CONFIG_PATHS.opencode.user : CONFIG_PATHS.opencode.project;
   }
 
   return null;

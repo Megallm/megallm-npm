@@ -4,7 +4,7 @@
 import chalk from 'chalk';
 import figlet from 'figlet';
 import { detectOS } from './detectors/os.js';
-import { getInstalledTools, checkToolsStatus, isClaudeCodeInstalled, isCodexInstalled } from './detectors/tools.js';
+import { getInstalledTools, checkToolsStatus, isClaudeCodeInstalled, isCodexInstalled, isOpenCodeInstalled } from './detectors/tools.js';
 import {
   promptToolSelection,
   promptSetupLevel,
@@ -16,9 +16,10 @@ import {
   promptStatuslineSetup
 } from './utils/prompts.js';
 import { select, confirm } from '@inquirer/prompts';
-import { installClaudeCode, installCodex, promptInstallation } from './utils/installer.js';
+import { installClaudeCode, installCodex, installOpenCode, promptInstallation } from './utils/installer.js';
 import { configureClaude } from './configurators/claude.js';
 import { configureCodex } from './configurators/codex.js';
+import { configureOpenCode } from './configurators/opencode.js';
 import { configureStatusline, isStatuslineConfigured } from './configurators/statusline.js';
 import { reloadShell, setEnvironmentVariable } from './utils/shell.js';
 import { MEGALLM_BASE_URL, SETUP_LEVELS } from './constants.js';
@@ -29,7 +30,7 @@ async function showBanner() {
   console.clear();
   const banner = figlet.textSync('MegaLLM', { horizontalLayout: 'default' });
   console.log(chalk.cyan(banner));
-  console.log(chalk.cyan('      Setup Tool for Claude Code & Codex'));
+  console.log(chalk.cyan('      Setup Tool for Claude Code, Codex & OpenCode'));
   console.log(chalk.gray('      Configure your AI tools to use MegaLLM\n'));
   console.log(chalk.gray('═'.repeat(50)));
 }
@@ -108,14 +109,24 @@ async function main() {
       console.log(chalk.yellow(`✗ Codex not found`));
     }
 
+    if (toolsStatus.opencode.installed) {
+      console.log(chalk.green(`✓ OpenCode detected`));
+      if (toolsStatus.opencode.configPath) {
+        console.log(chalk.gray(`  Config: ${toolsStatus.opencode.configPath}`));
+      }
+    } else {
+      console.log(chalk.yellow(`✗ OpenCode not found`));
+    }
+
     // Check if we need to offer installation
     const claudeInstalled = toolsStatus.claude.installed;
     const codexInstalled = toolsStatus.codex.installed;
+    const opencodeInstalled = toolsStatus.opencode.installed;
 
     // If no tools are installed, offer to install them
     if (!toolsStatus.anyInstalled) {
       console.log(chalk.yellow('\n⚠ No supported tools are installed.'));
-      console.log(chalk.cyan('MegaLLM supports Claude Code and Codex.'));
+      console.log(chalk.cyan('MegaLLM supports Claude Code, Codex, and OpenCode.'));
 
       // Ask if they want to install any tools
       const wantsToInstall = await confirm({
@@ -130,12 +141,13 @@ async function main() {
           choices: [
             { name: 'Claude Code (@anthropic-ai/claude-code)', value: 'claude' },
             { name: 'Codex (@openai/codex)', value: 'codex' },
-            { name: 'Both Claude Code and Codex', value: 'both' }
+            { name: 'OpenCode (opencode-ai)', value: 'opencode' },
+            { name: 'All tools', value: 'all' }
           ]
         });
 
         // Install based on choice
-        if (installChoice === 'claude' || installChoice === 'both') {
+        if (installChoice === 'claude' || installChoice === 'all') {
           const installed = await installClaudeCode();
           if (installed) {
             toolsStatus = checkToolsStatus();
@@ -143,8 +155,16 @@ async function main() {
           }
         }
 
-        if (installChoice === 'codex' || installChoice === 'both') {
+        if (installChoice === 'codex' || installChoice === 'all') {
           const installed = await installCodex();
+          if (installed) {
+            toolsStatus = checkToolsStatus();
+            installedTools = getInstalledTools();
+          }
+        }
+
+        if (installChoice === 'opencode' || installChoice === 'all') {
+          const installed = await installOpenCode();
           if (installed) {
             toolsStatus = checkToolsStatus();
             installedTools = getInstalledTools();
@@ -156,6 +176,7 @@ async function main() {
           console.log(chalk.red('\n❌ Installation failed. Please install manually:'));
           console.log(chalk.gray('  Claude Code: npm install -g @anthropic-ai/claude-code'));
           console.log(chalk.gray('  Codex: npm install -g @openai/codex'));
+          console.log(chalk.gray('  OpenCode: npm install -g opencode-ai'));
           process.exit(1);
         }
       } else {
@@ -163,11 +184,12 @@ async function main() {
         console.log(chalk.gray('You can install them manually:'));
         console.log(chalk.gray('  Claude Code: npm install -g @anthropic-ai/claude-code'));
         console.log(chalk.gray('  Codex: npm install -g @openai/codex'));
+        console.log(chalk.gray('  OpenCode: npm install -g opencode-ai'));
         process.exit(1);
       }
     }
     // If some tools are installed but not all, offer to install missing ones
-    else if (!claudeInstalled || !codexInstalled) {
+    else if (!claudeInstalled || !codexInstalled || !opencodeInstalled) {
       console.log(chalk.cyan('\n💡 Additional tools available'));
 
       if (!claudeInstalled) {
@@ -175,6 +197,9 @@ async function main() {
       }
       if (!codexInstalled) {
         console.log(chalk.gray('  • Codex - Not installed'));
+      }
+      if (!opencodeInstalled) {
+        console.log(chalk.gray('  • OpenCode - Not installed'));
       }
 
       const wantsMore = await confirm({
@@ -191,8 +216,13 @@ async function main() {
         if (!codexInstalled) {
           installChoices.push({ name: 'Codex (@openai/codex)', value: 'codex' });
         }
-        if (!claudeInstalled && !codexInstalled) {
-          installChoices.push({ name: 'Both Claude Code and Codex', value: 'both' });
+        if (!opencodeInstalled) {
+          installChoices.push({ name: 'OpenCode (opencode-ai)', value: 'opencode' });
+        }
+        // Only show "all" if multiple tools are missing
+        const missingCount = (!claudeInstalled ? 1 : 0) + (!codexInstalled ? 1 : 0) + (!opencodeInstalled ? 1 : 0);
+        if (missingCount > 1) {
+          installChoices.push({ name: 'All missing tools', value: 'all' });
         }
 
         const installChoice = await select({
@@ -201,7 +231,7 @@ async function main() {
         });
 
         // Install based on choice
-        if (installChoice === 'claude' || installChoice === 'both') {
+        if (installChoice === 'claude' || installChoice === 'all') {
           const installed = await installClaudeCode();
           if (installed) {
             toolsStatus = checkToolsStatus();
@@ -209,8 +239,16 @@ async function main() {
           }
         }
 
-        if (installChoice === 'codex' || installChoice === 'both') {
+        if (installChoice === 'codex' || installChoice === 'all') {
           const installed = await installCodex();
+          if (installed) {
+            toolsStatus = checkToolsStatus();
+            installedTools = getInstalledTools();
+          }
+        }
+
+        if (installChoice === 'opencode' || installChoice === 'all') {
+          const installed = await installOpenCode();
           if (installed) {
             toolsStatus = checkToolsStatus();
             installedTools = getInstalledTools();
@@ -238,6 +276,13 @@ async function main() {
       if (envVars.ANTHROPIC_API_KEY.length > 0) {
         console.log(chalk.cyan('\n🔑 API Key found in:'));
         envVars.ANTHROPIC_API_KEY.forEach(item => {
+          console.log(chalk.gray(`  • ${item.location}: ${item.value}`));
+        });
+      }
+
+      if (envVars.MEGALLM_API_KEY.length > 0) {
+        console.log(chalk.cyan('\n🔑 MegaLLM API Key found in:'));
+        envVars.MEGALLM_API_KEY.forEach(item => {
           console.log(chalk.gray(`  • ${item.location}: ${item.value}`));
         });
       }
@@ -344,8 +389,10 @@ async function main() {
 
     // Step 6: Confirm configuration
     const configSummary = {
-      tool: selectedTool === 'both' ? 'Claude Code & Codex' :
-            selectedTool === 'claude' ? 'Claude Code' : 'Codex',
+      tool: selectedTool === 'all' ? 'All tools (Claude Code, Codex & OpenCode)' :
+            selectedTool === 'both' ? 'Claude Code & Codex' :
+            selectedTool === 'claude' ? 'Claude Code' :
+            selectedTool === 'codex' ? 'Codex' : 'OpenCode',
       level: setupLevel,
       baseUrl: MEGALLM_BASE_URL,
       apiKey: apiKey
@@ -372,15 +419,21 @@ async function main() {
     let success = true;
 
     // Configure Claude Code
-    if (selectedTool === 'claude' || selectedTool === 'both') {
+    if (selectedTool === 'claude' || selectedTool === 'both' || selectedTool === 'all') {
       const claudeSuccess = await configureClaude(apiKey, configLevel);
       success = success && claudeSuccess;
     }
 
     // Configure Codex
-    if (selectedTool === 'codex' || selectedTool === 'both') {
+    if (selectedTool === 'codex' || selectedTool === 'both' || selectedTool === 'all') {
       const codexSuccess = await configureCodex(apiKey, configLevel);
       success = success && codexSuccess;
+    }
+
+    // Configure OpenCode
+    if (selectedTool === 'opencode' || selectedTool === 'all') {
+      const opencodeSuccess = await configureOpenCode(apiKey, configLevel);
+      success = success && opencodeSuccess;
     }
 
     if (!success) {
@@ -395,13 +448,22 @@ async function main() {
     // Step 8: Set environment variables (optional for system-level)
     if (isSystemLevel) {
       console.log(chalk.cyan('\n🔧 Setting environment variables...'));
-      setEnvironmentVariable('ANTHROPIC_BASE_URL', MEGALLM_BASE_URL, true);
-      setEnvironmentVariable('ANTHROPIC_API_KEY', apiKey, true);
+
+      // Set appropriate environment variables based on which tools are configured
+      if (selectedTool === 'claude' || selectedTool === 'both' || selectedTool === 'all') {
+        setEnvironmentVariable('ANTHROPIC_BASE_URL', MEGALLM_BASE_URL, true);
+        setEnvironmentVariable('ANTHROPIC_API_KEY', apiKey, true);
+      }
+
+      if (selectedTool === 'codex' || selectedTool === 'opencode' || selectedTool === 'both' || selectedTool === 'all') {
+        setEnvironmentVariable('MEGALLM_API_KEY', apiKey, true);
+      }
+
       console.log(chalk.green('✓ Environment variables set'));
     }
 
     // Step 8.5: Ask about statusline setup (only if Claude Code was configured)
-    if (selectedTool === 'claude' || selectedTool === 'both') {
+    if (selectedTool === 'claude' || selectedTool === 'both' || selectedTool === 'all') {
       await handleStatuslineSetup(toolsStatus);
     }
 
@@ -413,14 +475,19 @@ async function main() {
     console.log(chalk.green('\n🎉 Setup completed successfully!'));
     console.log(chalk.cyan('\n✨ You can now use:'));
 
-    if (selectedTool === 'claude' || selectedTool === 'both') {
+    if (selectedTool === 'claude' || selectedTool === 'both' || selectedTool === 'all') {
       console.log(chalk.white('  • Claude Code with MegaLLM'));
       console.log(chalk.gray('    Just start Claude Code as usual'));
     }
 
-    if (selectedTool === 'codex' || selectedTool === 'both') {
+    if (selectedTool === 'codex' || selectedTool === 'both' || selectedTool === 'all') {
       console.log(chalk.white('  • Codex with MegaLLM'));
       console.log(chalk.gray('    Just start Codex/Windsurf as usual'));
+    }
+
+    if (selectedTool === 'opencode' || selectedTool === 'all') {
+      console.log(chalk.white('  • OpenCode with MegaLLM'));
+      console.log(chalk.gray('    Just start OpenCode as usual'));
     }
 
     console.log(chalk.cyan('\n📚 Need help?'));

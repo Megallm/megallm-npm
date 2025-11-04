@@ -117,14 +117,62 @@ function isCodexInstalled() {
   };
 }
 
+function isOpenCodeInstalled() {
+  // Check for OpenCode installation
+  const opencodeConfigDir = path.join(os.homedir(), '.config', 'opencode');
+
+  // First check if the .config/opencode directory exists
+  if (fs.existsSync(opencodeConfigDir)) {
+    const configPath = path.join(opencodeConfigDir, 'opencode.json');
+    if (fs.existsSync(configPath)) {
+      return {
+        installed: true,
+        path: opencodeConfigDir,
+        configPath: configPath,
+        configured: true
+      };
+    }
+    // Directory exists but no config
+    return {
+      installed: true,
+      path: opencodeConfigDir,
+      configPath: configPath,
+      configured: false
+    };
+  }
+
+  // Also check for the opencode CLI command
+  try {
+    const command = process.platform === 'win32' ? 'where opencode' : 'which opencode';
+    execSync(command, { stdio: 'ignore' });
+    return {
+      installed: true,
+      path: opencodeConfigDir,
+      configPath: path.join(opencodeConfigDir, 'opencode.json'),
+      cliAvailable: true,
+      configured: false
+    };
+  } catch (error) {
+    // Command not found
+  }
+
+  return {
+    installed: false,
+    path: null,
+    configPath: null
+  };
+}
+
 function checkToolsStatus() {
   const claude = isClaudeCodeInstalled();
   const codex = isCodexInstalled();
+  const opencode = isOpenCodeInstalled();
 
   return {
     claude,
     codex,
-    anyInstalled: claude.installed || codex.installed
+    opencode,
+    anyInstalled: claude.installed || codex.installed || opencode.installed
   };
 }
 
@@ -148,10 +196,19 @@ function getInstalledTools() {
     });
   }
 
+  if (status.opencode.installed) {
+    tools.push({
+      name: 'OpenCode',
+      key: 'opencode',
+      ...status.opencode
+    });
+  }
+
   return tools;
 }
 
 export { isClaudeCodeInstalled };
 export { isCodexInstalled };
+export { isOpenCodeInstalled };
 export { checkToolsStatus };
 export { getInstalledTools };

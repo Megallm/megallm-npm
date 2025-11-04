@@ -138,6 +138,7 @@ dist
 # MegaLLM Configuration (for development)
 .claude/settings.local.json
 .codex/config.toml
+opencode.json
 
 # IDE
 .DS_Store

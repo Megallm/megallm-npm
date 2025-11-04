@@ -12,7 +12,8 @@ export async function promptToolSelection(availableTools) {
       choices: [
         { name: 'Claude Code', value: 'claude' },
         { name: 'Codex', value: 'codex' },
-        { name: 'Both', value: 'both' }
+        { name: 'Open Code', value: 'opencode' },
+        { name: 'All', value: 'all' }
       ]
     });
 
@@ -24,8 +25,10 @@ export async function promptToolSelection(availableTools) {
     value: tool.key
   }));
 
-  if (availableTools.length > 1) {
+  if (availableTools.length == 2) {
     choices.push({ name: 'Configure Both', value: 'both' });
+  } else if (availableTools.length == 3) {
+    choices.push({ name: 'Configure All', value: 'all' });
   }
 
   const selectedTool = await select({
