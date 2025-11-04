@@ -14,6 +14,10 @@ import { getConfigPath } from '../detectors/os.js';
  * Fetches available models from MegaLLM API
  * @param {string} apiKey - The MegaLLM API key
  * @returns {Promise<Object>} Models organized by provider
+ * Retrieve non-Anthropic models available via the MegaLLM API.
+ *
+ * @param {string} apiKey - MegaLLM API key used for Authorization.
+ * @returns {Promise<Object>} An object mapping model IDs to `{ id, name }` for non-Anthropic models. If the API request fails, returns a predefined fallback set of non-Anthropic models.
  */
 async function fetchMegaLLMModels(apiKey) {
   try {
@@ -68,6 +72,10 @@ async function fetchMegaLLMModels(apiKey) {
   }
 }
 
+/**
+ * Detects OpenCode configuration files that reference MegaLLM and reports their locations and contents.
+ * @returns {{ hasConfig: boolean, locations: string[], configs: { path: string, config: object }[] }} An object where `hasConfig` is `true` if any matching configuration was found, `locations` lists human-readable location strings (e.g., "System: /path/to/opencode.json"), and `configs` contains entries with the file `path` and parsed `config` object for each matching file.
+ */
 async function checkExistingOpenCodeConfig() {
   const results = {
     hasConfig: false,
@@ -100,6 +108,12 @@ async function checkExistingOpenCodeConfig() {
   return results;
 }
 
+/**
+ * Configure OpenCode to use MegaLLM-backed Anthropic models and write the resulting configuration at the given level.
+ * @param {string} apiKey - MegaLLM API key used to fetch available models.
+ * @param {'system'|'project'} [level='system'] - Target configuration scope: 'system' writes a global config, 'project' writes a repo-local config.
+ * @returns {boolean} `true` if the configuration was written successfully, `false` otherwise.
+ */
 async function configureOpenCode(apiKey, level = 'system') {
   const spinner = ora('Configuring OpenCode...').start();
 
@@ -183,6 +197,14 @@ async function configureOpenCode(apiKey, level = 'system') {
   }
 }
 
+/**
+ * Ensures a given pattern is present in the repository's .gitignore, appending it if missing.
+ *
+ * Appends a section header and the provided pattern to `.gitignore` when the pattern is not already present,
+ * logs a gray confirmation message when added, and silently ignores any filesystem errors.
+ *
+ * @param {string} pattern - The gitignore pattern to add (e.g., "opencode.json").
+ */
 async function addToGitignore(pattern) {
   const { default: fs } = await import('fs-extra');
   const gitignorePath = '.gitignore';
@@ -203,6 +225,16 @@ async function addToGitignore(pattern) {
   }
 }
 
+/**
+ * Validate an OpenCode configuration file for use with MegaLLM's Anthropic provider.
+ * @param {string} configPath - Filesystem path to the OpenCode JSON configuration.
+ * @returns {{valid: true, config: Object} | {valid: false, error: string, details?: {baseUrl: boolean, apiKeyRef: boolean, apiKeySet: boolean}}}
+ *   When valid: an object with `valid: true` and the parsed `config`.
+ *   When invalid: an object with `valid: false` and an `error` message. For configuration-related failures the optional `details` object indicates:
+ *     - `baseUrl`: `true` if `provider.anthropic.options.baseURL` equals "https://ai.megallm.io/v1".
+ *     - `apiKeyRef`: `true` if `provider.anthropic.options.apiKey` equals "{env:MEGALLM_API_KEY}".
+ *     - `apiKeySet`: `true` if the `MEGALLM_API_KEY` environment variable is present.
+ */
 async function verifyOpenCodeConfig(configPath) {
   try {
     const config = await readJsonFile(configPath);

@@ -25,7 +25,12 @@ import { reloadShell, setEnvironmentVariable } from './utils/shell.js';
 import { MEGALLM_BASE_URL, SETUP_LEVELS } from './constants.js';
 import { checkExistingConfiguration, removeEnvVars, detectExistingEnvVars, removeConfigurationFiles } from './utils/envDetector.js';
 
-// ASCII Art for branding
+/**
+ * Display the MegaLLM branded ASCII banner and header for the setup tool.
+ *
+ * Clears the terminal and prints a colored ASCII title, a subtitle listing supported tools,
+ * a brief description, and a separator line.
+ */
 async function showBanner() {
   console.clear();
   const banner = figlet.textSync('MegaLLM', { horizontalLayout: 'default' });
@@ -65,15 +70,14 @@ async function handleStatuslineSetup(toolsStatus) {
 }
 
 /**
- * Run the interactive MegaLLM setup CLI to detect, install, configure, and finalize integration for Claude Code and Codex.
+ * Launches the interactive MegaLLM setup CLI to detect, install, and configure supported AI tools.
  *
- * This command-line flow detects OS and shell, checks for installed tools, offers installation of missing tools,
- * inspects and optionally overrides existing MegaLLM configuration, prompts for tool selection and configuration level,
- * collects an API key, applies per-tool configuration, optionally sets system environment variables, optionally
- * configures the Claude Code statusline, reloads the user's shell, and prints final usage and help information.
+ * Guides the user through system detection, tool installation, selection of Claude Code, Codex, and OpenCode,
+ * configuration level and API key collection, per-tool configuration, optional system environment variable updates,
+ * optional Claude Code statusline setup, shell reload, and final usage instructions.
  *
- * Note: this function performs many side effects (installing packages, modifying configuration and environment files,
- * reloading the shell) and will call process.exit in multiple user-driven or error cases.
+ * This function performs system-side effects (installing packages, modifying configuration and environment files,
+ * reloading the shell) and may call process.exit to terminate the process based on user choices or errors.
  */
 async function main() {
   await showBanner();

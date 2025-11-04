@@ -41,6 +41,18 @@ function isClaudeCodeInstalled() {
   };
 }
 
+/**
+ * Detects whether Codex (or the Windsurf variant) is installed and reports its paths and configuration state.
+ *
+ * @returns {{installed: boolean, path: string|null, configPath: string|null, configured?: boolean, cliAvailable?: boolean, isWindsurf?: boolean}}
+ * An object describing the detected installation:
+ * - `installed`: `true` if Codex or Windsurf was found, `false` otherwise.
+ * - `path`: The expected Codex directory (`~/.codex`) when detected, or `null` if not installed.
+ * - `configPath`: The path to `config.toml` inside the Codex directory, or `null` if not installed.
+ * - `configured`: `true` if `config.toml` exists at `configPath`, `false` if the installation exists but the config file is missing. Omitted when not applicable.
+ * - `cliAvailable`: `true` if a `codex` CLI executable was found on PATH. Omitted when not applicable.
+ * - `isWindsurf`: `true` if a Windsurf installation (which includes Codex) was detected. Omitted when not applicable.
+ */
 function isCodexInstalled() {
   // Check for Codex installation
   const codexDir = path.join(os.homedir(), '.codex');
@@ -117,6 +129,17 @@ function isCodexInstalled() {
   };
 }
 
+/**
+ * Detects whether OpenCode is installed and returns its installation and configuration status.
+ *
+ * @returns {{installed: boolean, path: string|null, configPath: string|null, configured?: boolean, cliAvailable?: boolean}}
+ * An object describing the detected OpenCode state:
+ * - `installed`: `true` if OpenCode was found (config directory or CLI), `false` otherwise.
+ * - `path`: the filesystem path to the OpenCode config directory (`~/.config/opencode`) or `null` if not found.
+ * - `configPath`: the expected path to the `opencode.json` config file or `null` if not found.
+ * - `configured` (optional): `true` if `opencode.json` exists, `false` if the directory exists but the file does not.
+ * - `cliAvailable` (optional): `true` if the `opencode` CLI was found on PATH (used when the config directory is absent).
+ */
 function isOpenCodeInstalled() {
   // Check for OpenCode installation
   const opencodeConfigDir = path.join(os.homedir(), '.config', 'opencode');
@@ -163,6 +186,10 @@ function isOpenCodeInstalled() {
   };
 }
 
+/**
+ * Gather installation status for Claude Code, Codex, and OpenCode.
+ * @returns {{claude: {installed: boolean, path: (string|null), configPath: (string|null), cliAvailable?: boolean}, codex: {installed: boolean, path: (string|null), configPath: (string|null), configured?: boolean, isWindsurf?: boolean, cliAvailable?: boolean}, opencode: {installed: boolean, path: (string|null), configPath: (string|null), configured?: boolean, cliAvailable?: boolean}, anyInstalled: boolean}} An object with per-tool status objects (`claude`, `codex`, `opencode`) and `anyInstalled` set to `true` if any of the three tools is installed, `false` otherwise.
+ */
 function checkToolsStatus() {
   const claude = isClaudeCodeInstalled();
   const codex = isCodexInstalled();
@@ -176,6 +203,10 @@ function checkToolsStatus() {
   };
 }
 
+/**
+ * Builds a list of detected coding tools and their metadata.
+ * @returns {Array<Object>} An array of tool descriptor objects for each detected tool. Each object contains `name` (display name), `key` (identifier) and detector-specific fields such as `installed`, `path`, `configPath`, `cliAvailable`, `configured`, and other flags (e.g., `isWindsurf`) when present.
+ */
 function getInstalledTools() {
   const status = checkToolsStatus();
   const tools = [];

@@ -43,6 +43,14 @@ function reloadShell() {
   }
 }
 
+/**
+ * Set an environment variable for the current process and optionally persist it for future sessions.
+ *
+ * @param {string} key - The environment variable name.
+ * @param {string} value - The value to assign to the environment variable.
+ * @param {boolean} [persistent=true] - If true, persist the variable so it is available in future sessions; if false, only set it for the current process.
+ * @returns {boolean} `true` if the variable was set (and persisted when requested), `false` on failure.
+ */
 function setEnvironmentVariable(key, value, persistent = true) {
   // Set for current session
   process.env[key] = value;
