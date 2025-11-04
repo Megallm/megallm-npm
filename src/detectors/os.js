@@ -86,6 +86,12 @@ function getLinuxDistro() {
   return 'Linux';
 }
 
+/**
+ * Resolve the filesystem path for a tool's configuration based on the requested level.
+ * @param {string} tool - Tool identifier: `'claude'`, `'codex'`, or `'opencode'`.
+ * @param {string} level - Configuration scope; use `'system'` for global/user config, any other value for project-level config.
+ * @returns {string|null} The resolved path to the configuration file or directory for the given tool and level, or `null` if the tool is unrecognized.
+ */
 function getConfigPath(tool, level) {
   if (tool === 'claude') {
     if (level === 'system') {
@@ -99,6 +105,8 @@ function getConfigPath(tool, level) {
     }
   } else if (tool === 'codex') {
     return level === 'system' ? CONFIG_PATHS.codex.user : CONFIG_PATHS.codex.project;
+  } else if (tool === 'opencode') {
+    return level === 'system' ? CONFIG_PATHS.opencode.user : CONFIG_PATHS.opencode.project;
   }
 
   return null;

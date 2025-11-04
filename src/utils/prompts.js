@@ -3,6 +3,16 @@ import { select, input, confirm, password } from '@inquirer/prompts';
 import chalk from 'chalk';
 import { TOOLS, SETUP_LEVELS } from '../constants.js';
 
+/**
+ * Prompt the user to choose which tool(s) to configure.
+ *
+ * If `availableTools` is empty, presents a fixed list of default tools (Claude Code, Codex, Open Code, All).
+ * If `availableTools` contains items, presents those tools as choices and, when there are exactly 2 or 3 tools,
+ * adds an extra choice to configure both/all of them.
+ *
+ * @param {Array<{name: string, key: string}>} availableTools - List of available tools; each item should include `name` (display label) and `key` (returned value).
+ * @returns {string} The selected tool key or special action value (e.g., `"both"`, `"all"`).
+ */
 export async function promptToolSelection(availableTools) {
   if (availableTools.length === 0) {
     console.log(chalk.yellow('\n⚠ Tools have been installed, now let\'s configure them.'));
@@ -12,7 +22,8 @@ export async function promptToolSelection(availableTools) {
       choices: [
         { name: 'Claude Code', value: 'claude' },
         { name: 'Codex', value: 'codex' },
-        { name: 'Both', value: 'both' }
+        { name: 'Open Code', value: 'opencode' },
+        { name: 'All', value: 'all' }
       ]
     });
 
@@ -24,8 +35,10 @@ export async function promptToolSelection(availableTools) {
     value: tool.key
   }));
 
-  if (availableTools.length > 1) {
+  if (availableTools.length == 2) {
     choices.push({ name: 'Configure Both', value: 'both' });
+  } else if (availableTools.length == 3) {
+    choices.push({ name: 'Configure All', value: 'all' });
   }
 
   const selectedTool = await select({

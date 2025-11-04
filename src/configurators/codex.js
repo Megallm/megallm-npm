@@ -9,8 +9,15 @@ import {
  } from '../utils/files.js';
 import { MEGALLM_BASE_URL } from '../constants.js';
 import { getConfigPath } from '../detectors/os.js';
-import { setEnvironmentVariable } from '../utils/shell.js';
 
+/**
+ * Detect whether a system-level Codex configuration enables the MegaLLM provider.
+ *
+ * @returns {{hasConfig: boolean, locations: string[], configs: {path: string, config: Object}[]}} An object describing discovered configurations:
+ * - `hasConfig`: `true` if a system-level Codex config referencing MegaLLM was found, `false` otherwise.
+ * - `locations`: list of human-readable locations where matching configurations were found (e.g., `"System: /path/to/config"`).
+ * - `configs`: list of objects with `path` (file path) and `config` (parsed TOML configuration) for each match.
+ */
 async function checkExistingCodexConfig() {
   const results = {
     hasConfig: false,
@@ -36,6 +43,13 @@ async function checkExistingCodexConfig() {
   return results;
 }
 
+/**
+ * Write a Codex configuration that enables the MegaLLM model provider and persists it to the system config path.
+ *
+ * @param {string} apiKey - The MEGALLM API key used for display/masking in the output (not written to the environment).
+ * @param {string} [level='system'] - Requested configuration level; this function always writes to the system (global) config path regardless of this value.
+ * @returns {boolean} `true` if the configuration was written and reported successfully, `false` otherwise.
+ */
 async function configureCodex(apiKey, level = 'system') {
   const spinner = ora('Configuring Codex...').start();
 
@@ -93,10 +107,6 @@ async function configureCodex(apiKey, level = 'system') {
 
     // Write the TOML configuration
     await writeTomlFile(configPath, newConfig, true);
-
-    // Set the MEGALLM_API_KEY environment variable
-    spinner.text = 'Setting MEGALLM_API_KEY environment variable...';
-    setEnvironmentVariable('MEGALLM_API_KEY', apiKey, true);
 
     spinner.succeed(chalk.green('Codex configured successfully!'));
 

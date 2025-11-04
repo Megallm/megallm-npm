@@ -9,13 +9,25 @@ import chalk from 'chalk';
 const execAsync = promisify(exec);
 
 /**
- * Detect existing MegaLLM environment variables across all platforms
+ * Detect existing MegaLLM-related environment variables across the system.
+ *
+ * Scans the current process environment and platform-specific locations (Windows registry and PowerShell profiles on Windows; common shell and system environment files on Unix-like systems) for ANTHROPIC_BASE_URL, ANTHROPIC_API_KEY, and MEGALLM_API_KEY. Detection errors are logged as warnings but do not cause the function to throw.
+ *
+ * @returns {{ANTHROPIC_BASE_URL: Array<Object>, ANTHROPIC_API_KEY: Array<Object>, MEGALLM_API_KEY: Array<Object>, hasExisting: boolean}}
+ * An object with:
+ * - `ANTHROPIC_BASE_URL`, `ANTHROPIC_API_KEY`, `MEGALLM_API_KEY`: arrays of detected entries. Each entry is an object containing:
+ *   - `source` (string): where the value was found (e.g., "current_process", "config_file", "registry", "shell_env").
+ *   - `value` (string): display value; API keys are masked for display.
+ *   - `rawValue` (string, optional): the unmasked API key when available.
+ *   - `location` (string): descriptive location (file path, "Current shell session", registry hive, etc.).
+ * - `hasExisting`: `true` if any of the three arrays contains at least one entry, `false` otherwise.
  */
 export async function detectExistingEnvVars() {
   const platform = os.platform();
   const results = {
     ANTHROPIC_BASE_URL: [],
     ANTHROPIC_API_KEY: [],
+    MEGALLM_API_KEY: [],
     hasExisting: false
   };
 
@@ -38,6 +50,15 @@ export async function detectExistingEnvVars() {
       });
     }
 
+    if (process.env.MEGALLM_API_KEY) {
+      results.MEGALLM_API_KEY.push({
+        source: 'current_process',
+        value: maskApiKey(process.env.MEGALLM_API_KEY),
+        rawValue: process.env.MEGALLM_API_KEY,
+        location: 'Current shell session'
+      });
+    }
+
     if (platform === 'win32') {
       await detectWindowsEnvVars(results);
     } else {
@@ -46,7 +67,8 @@ export async function detectExistingEnvVars() {
 
     // Check if any existing variables were found
     results.hasExisting = results.ANTHROPIC_BASE_URL.length > 0 ||
-                         results.ANTHROPIC_API_KEY.length > 0;
+                         results.ANTHROPIC_API_KEY.length > 0 ||
+                         results.MEGALLM_API_KEY.length > 0;
 
   } catch (error) {
     console.error(chalk.yellow(`Warning: Could not fully detect environment variables: ${error.message}`));
@@ -56,7 +78,11 @@ export async function detectExistingEnvVars() {
 }
 
 /**
- * Detect environment variables on Windows
+ * Detect MegaLLM-related environment variables in Windows registry and PowerShell profiles and append any findings to the provided results object.
+ *
+ * Finds occurrences of ANTHROPIC_BASE_URL, ANTHROPIC_API_KEY, and MEGALLM_API_KEY in user and system registry locations and in common PowerShell profile files, and pushes entries into the corresponding arrays on the results object.
+ *
+ * @param {Object} results - Mutable results container to populate. Expected to have arrays for `ANTHROPIC_BASE_URL`, `ANTHROPIC_API_KEY`, and `MEGALLM_API_KEY`; this function appends objects describing each discovery (fields include `source`, `value`, optional `rawValue` for API keys, and `location`).
  */
 async function detectWindowsEnvVars(results) {
   // Check Windows Registry (User variables)
@@ -79,6 +105,19 @@ async function detectWindowsEnvVars(results) {
       if (match) {
         const apiKey = match[1].trim();
         results.ANTHROPIC_API_KEY.push({
+          source: 'windows_registry_user',
+          value: maskApiKey(apiKey),
+          rawValue: apiKey,
+          location: 'Windows Registry (User)'
+        });
+      }
+    }
+
+    if (userEnvResult.stdout.includes('MEGALLM_API_KEY')) {
+      const match = userEnvResult.stdout.match(/MEGALLM_API_KEY\s+REG_\w+\s+(.+)/);
+      if (match) {
+        const apiKey = match[1].trim();
+        results.MEGALLM_API_KEY.push({
           source: 'windows_registry_user',
           value: maskApiKey(apiKey),
           rawValue: apiKey,
@@ -117,6 +156,19 @@ async function detectWindowsEnvVars(results) {
         });
       }
     }
+
+    if (systemEnvResult.stdout.includes('MEGALLM_API_KEY')) {
+      const match = systemEnvResult.stdout.match(/MEGALLM_API_KEY\s+REG_\w+\s+(.+)/);
+      if (match) {
+        const apiKey = match[1].trim();
+        results.MEGALLM_API_KEY.push({
+          source: 'windows_registry_system',
+          value: maskApiKey(apiKey),
+          rawValue: apiKey,
+          location: 'Windows Registry (System)'
+        });
+      }
+    }
   } catch (error) {
     // Registry query might fail if no admin permissions
   }
@@ -148,7 +200,13 @@ async function detectWindowsEnvVars(results) {
 }
 
 /**
- * Detect environment variables on Unix-like systems
+ * Scan common Unix-like and macOS shell/system configuration files and the current shell session for
+ * ANTHROPIC_BASE_URL, ANTHROPIC_API_KEY, and MEGALLM_API_KEY, and record any discoveries in `results`.
+ *
+ * @param {Object} results - Mutable detector results object to populate.
+ *   The function appends entries to `results.ANTHROPIC_BASE_URL`, `results.ANTHROPIC_API_KEY`, and
+ *   `results.MEGALLM_API_KEY`. Each entry includes at minimum a `source` and `location`; API key
+ *   entries also include a masked `value` and, when available, `rawValue`.
  */
 async function detectUnixEnvVars(results) {
   const homeDir = os.homedir();
@@ -188,7 +246,7 @@ async function detectUnixEnvVars(results) {
 
   // Check if variables are set in current shell session
   try {
-    const envOutput = execSync('env | grep ANTHROPIC', { encoding: 'utf8' });
+    const envOutput = execSync('env | grep -E "(ANTHROPIC|MEGALLM)"', { encoding: 'utf8' });
     const lines = envOutput.split('\n').filter(line => line);
 
     for (const line of lines) {
@@ -216,6 +274,19 @@ async function detectUnixEnvVars(results) {
           });
         }
       }
+
+      if (line.startsWith('MEGALLM_API_KEY=')) {
+        const value = line.substring('MEGALLM_API_KEY='.length);
+        const existing = results.MEGALLM_API_KEY.find(r => r.rawValue === value && r.source === 'shell_env');
+        if (!existing) {
+          results.MEGALLM_API_KEY.push({
+            source: 'shell_env',
+            value: maskApiKey(value),
+            rawValue: value,
+            location: 'Shell environment'
+          });
+        }
+      }
     }
   } catch (error) {
     // grep might fail if no matches
@@ -223,7 +294,20 @@ async function detectUnixEnvVars(results) {
 }
 
 /**
- * Check file content for environment variables
+ * Scan file text for MegaLLM-related environment variable definitions and record any findings in the results object.
+ *
+ * Detects ANTHROPIC_BASE_URL, ANTHROPIC_API_KEY, and MEGALLM_API_KEY assignments in the provided file content and appends entries to the corresponding arrays on `results`.
+ *
+ * Each appended entry has:
+ * - `source: 'config_file'`
+ * - `location`: `${sourceName} (${filePath})`
+ * - For URL entries: `value` set to the detected URL.
+ * - For API key entries: `value` set to a masked display string and `rawValue` set to the full detected key.
+ *
+ * @param {string} content - The file contents to scan.
+ * @param {Object} results - Object collecting detections; expected to have arrays `ANTHROPIC_BASE_URL`, `ANTHROPIC_API_KEY`, and `MEGALLM_API_KEY`.
+ * @param {string} sourceName - A short label describing the source (e.g., "bashrc", "PowerShell profile").
+ * @param {string} filePath - The path to the file scanned, used in the recorded `location`.
  */
 function checkFileForEnvVars(content, results, sourceName, filePath) {
   // Check for ANTHROPIC_BASE_URL
@@ -276,12 +360,41 @@ function checkFileForEnvVars(content, results, sourceName, filePath) {
       }
     }
   }
+
+  // Check for MEGALLM_API_KEY
+  const megallmKeyPatterns = [
+    /export\s+MEGALLM_API_KEY\s*=\s*["']?([^"'\n]+)["']?/g,
+    /MEGALLM_API_KEY\s*=\s*["']?([^"'\n]+)["']?/g,
+    /\$env:MEGALLM_API_KEY\s*=\s*["']?([^"'\n]+)["']?/g,
+    /set\s+MEGALLM_API_KEY\s*=\s*["']?([^"'\n]+)["']?/g
+  ];
+
+  for (const pattern of megallmKeyPatterns) {
+    let match;
+    while ((match = pattern.exec(content)) !== null) {
+      const value = match[1].trim();
+      const existing = results.MEGALLM_API_KEY.find(r =>
+        r.rawValue === value && r.location === `${sourceName} (${filePath})`
+      );
+      if (!existing) {
+        results.MEGALLM_API_KEY.push({
+          source: 'config_file',
+          value: maskApiKey(value),
+          rawValue: value,
+          location: `${sourceName} (${filePath})`
+        });
+      }
+    }
+  }
 }
 
 /**
- * Remove environment variables from all locations
+ * Remove specified environment variables from the current process and common system configuration locations.
+ *
+ * @param {string[]} variables - Names of environment variables to remove. Defaults to ['ANTHROPIC_BASE_URL', 'ANTHROPIC_API_KEY', 'MEGALLM_API_KEY'].
+ * @returns {{success: boolean, removed: Array<{variable: string, location: string}>, errors: string[]}} An object describing the outcome: `success` is true when no unhandled errors occurred, `removed` lists each removed variable and its location, and `errors` contains any error messages encountered.
  */
-export async function removeEnvVars(variables = ['ANTHROPIC_BASE_URL', 'ANTHROPIC_API_KEY']) {
+export async function removeEnvVars(variables = ['ANTHROPIC_BASE_URL', 'ANTHROPIC_API_KEY', 'MEGALLM_API_KEY']) {
   const platform = os.platform();
   const results = {
     success: true,
