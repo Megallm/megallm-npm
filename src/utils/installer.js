@@ -88,7 +88,7 @@ async function promptInstallation(toolName) {
     console.log(chalk.gray('\nYou can install it manually later:'));
     if (toolName.includes('Claude')) {
       console.log(chalk.white('  npm install -g @anthropic-ai/claude-code'));
-    } else if (toolName.includes('Claude')){
+    } else if (toolName.includes('Codex')){
       console.log(chalk.white('  npm install -g @openai/codex'));
     } else {
       console.log(chalk.white('  npm install -g opencode-ai'))
