@@ -43,6 +43,14 @@ function reloadShell() {
   }
 }
 
+/**
+ * Set an environment variable for the current process and optionally persist it for future sessions.
+ *
+ * @param {string} key - The environment variable name.
+ * @param {string} value - The value to assign to the environment variable.
+ * @param {boolean} [persistent=true] - If true, persist the variable so it is available in future sessions; if false, only set it for the current process.
+ * @returns {boolean} `true` if the variable was set (and persisted when requested), `false` on failure.
+ */
 function setEnvironmentVariable(key, value, persistent = true) {
   // Set for current session
   process.env[key] = value;
@@ -74,7 +82,7 @@ function setEnvironmentVariable(key, value, persistent = true) {
       // Unix-like systems - append to shell config
       const shellConfigFile = getShellConfigFile();
 
-      const exportLine = `\n# MegaLLM Configuration\nexport ${key}="${value}"\n`;
+      const exportLine = `export ${key}="${value}"`;
 
       // Check if already exists and update or append
       if (fs.existsSync(shellConfigFile)) {
@@ -83,16 +91,29 @@ function setEnvironmentVariable(key, value, persistent = true) {
 
         if (regex.test(content)) {
           // Update existing
-          content = content.replace(regex, `export ${key}="${value}"`);
+          content = content.replace(regex, exportLine);
         } else {
-          // Append new
-          content += exportLine;
+          // Append new - only add comment if it doesn't exist
+          const megallmCommentExists = content.includes('# MegaLLM Configuration');
+          if (!megallmCommentExists) {
+            content += `\n# MegaLLM Configuration\n${exportLine}\n`;
+          } else {
+            // Find the MegaLLM Configuration section and append there
+            const megallmSectionRegex = /(# MegaLLM Configuration\n(?:export [A-Z_]+=.*\n)*)/;
+            if (megallmSectionRegex.test(content)) {
+              content = content.replace(megallmSectionRegex, `$1${exportLine}\n`);
+            } else {
+              // Fallback: just append at the end
+              content += `${exportLine}\n`;
+            }
+          }
         }
 
         fs.writeFileSync(shellConfigFile, content);
       } else {
         // Create new file
-        fs.writeFileSync(shellConfigFile, exportLine);
+        const exportBlock = `# MegaLLM Configuration\n${exportLine}\n`;
+        fs.writeFileSync(shellConfigFile, exportBlock);
       }
 
       return true;
