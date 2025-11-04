@@ -11,6 +11,9 @@ import {
 import { getConfigPath } from '../detectors/os.js';
 
 /**
+ * Fetches available models from MegaLLM API
+ * @param {string} apiKey - The MegaLLM API key
+ * @returns {Promise<Object>} Models organized by provider
  * Retrieve non-Anthropic models available via the MegaLLM API.
  *
  * @param {string} apiKey - MegaLLM API key used for Authorization.

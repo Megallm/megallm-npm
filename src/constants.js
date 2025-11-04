@@ -14,6 +14,10 @@ export const CONFIG_PATHS = {
   codex: {
     user: path.join(os.homedir(), '.codex', 'config.toml'),
     project: '.codex/config.toml'
+  },
+  opencode: {
+    user: path.join(os.homedir(), '.config', 'opencode', 'opencode.json'),
+    project: 'opencode.json'
   }
 };
 
@@ -27,7 +31,8 @@ export const SHELL_CONFIG_FILES = {
 export const TOOLS = {
   CLAUDE_CODE: 'Claude Code',
   CODEX: 'Codex',
-  BOTH: 'Both'
+  OPENCODE: 'OpenCode',
+  ALL: 'All'
 };
 
 export const SETUP_LEVELS = {
