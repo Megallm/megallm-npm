@@ -1,21 +1,37 @@
-// User Interaction Prompts
-import { select, input, confirm, password } from '@inquirer/prompts';
+import { select, confirm, password } from '@inquirer/prompts';
 import chalk from 'chalk';
-import { TOOLS, SETUP_LEVELS } from '../constants.js';
+import { SETUP_LEVELS } from '../constants.js';
+import { exec } from 'child_process';
 
-/**
- * Prompt the user to choose which tool(s) to configure.
- *
- * If `availableTools` is empty, presents a fixed list of default tools (Claude Code, Codex, Open Code, All).
- * If `availableTools` contains items, presents those tools as choices and, when there are exactly 2 or 3 tools,
- * adds an extra choice to configure both/all of them.
- *
- * @param {Array<{name: string, key: string}>} availableTools - List of available tools; each item should include `name` (display label) and `key` (returned value).
- * @returns {string} The selected tool key or special action value (e.g., `"both"`, `"all"`).
- */
-export async function promptToolSelection(availableTools) {
-  if (availableTools.length === 0) {
-    console.log(chalk.yellow('\n⚠ Tools have been installed, now let\'s configure them.'));
+/* ---------------------------
+   UI HELPERS (NEW IMPROVEMENT)
+---------------------------- */
+
+function divider(color = chalk.white) {
+  console.log(color('═'.repeat(50)));
+}
+
+function title(text, color = chalk.cyan) {
+  console.log('\n' + color(text));
+}
+
+function info(text, color = chalk.white) {
+  console.log(color(text));
+}
+
+function warning(text) {
+  console.log(chalk.yellow(text));
+}
+
+/* ---------------------------
+   TOOL SELECTION
+---------------------------- */
+
+export async function promptToolSelection(availableTools = []) {
+  title('🔧 Tool Selection', chalk.cyan);
+
+  if (!availableTools.length) {
+    warning("⚠ No tools detected, using default configuration...\n");
 
     const tool = await select({
       message: 'Which tool would you like to configure?',
@@ -23,106 +39,113 @@ export async function promptToolSelection(availableTools) {
         { name: 'Claude Code', value: 'claude' },
         { name: 'Codex', value: 'codex' },
         { name: 'Open Code', value: 'opencode' },
-        { name: 'All', value: 'all' }
+        { name: 'All Tools', value: 'all' }
       ]
     });
 
     return tool;
   }
 
-  const choices = availableTools.map(tool => ({
-    name: tool.name,
-    value: tool.key
+  const choices = availableTools.map(t => ({
+    name: t.name,
+    value: t.key
   }));
 
-  if (availableTools.length == 2) {
+  if (availableTools.length === 2) {
     choices.push({ name: 'Configure Both', value: 'both' });
-  } else if (availableTools.length == 3) {
+  }
+
+  if (availableTools.length >= 3) {
     choices.push({ name: 'Configure All', value: 'all' });
   }
 
-  const selectedTool = await select({
-    message: 'Which tool would you like to configure?',
+  return await select({
+    message: 'Select tool to configure:',
     choices
   });
-
-  return selectedTool;
 }
 
+/* ---------------------------
+   SETUP LEVEL
+---------------------------- */
+
 export async function promptSetupLevel() {
-  const level = await select({
+  title('⚙ Setup Level');
+
+  return await select({
     message: 'Choose setup level:',
     choices: [
       {
-        name: 'System-level (applies to all projects)',
+        name: 'System-level (all projects)',
         value: SETUP_LEVELS.SYSTEM
       },
       {
-        name: 'Project-level (current project only)',
+        name: 'Project-level (current project)',
         value: SETUP_LEVELS.PROJECT
       }
     ],
     default: SETUP_LEVELS.SYSTEM
   });
-
-  return level;
 }
 
+/* ---------------------------
+   API KEY FLOW (IMPROVED UX)
+---------------------------- */
+
 export async function promptApiKey(toolName = '') {
-  // First ask if they have an API key
+  title('API Key Setup');
+
   const hasKey = await confirm({
-    message: "Do you have a MegaLLM API key?",
+    message: 'Do you already have a MegaLLM API key?',
     default: false
   });
 
   if (!hasKey) {
-    // Open browser and show instructions
-    console.log(chalk.cyan('\n🔑 Let\'s create your MegaLLM API key!'));
-    console.log(chalk.white('═'.repeat(50)));
-    console.log(chalk.yellow('\nOpening MegaLLM in your browser...'));
-    console.log(chalk.white('\n📌 If the browser doesn\'t open automatically, visit:'));
-    console.log(chalk.cyan.bold('   https://megallm.io\n'));
+    warning('\nOpening MegaLLM dashboard...\n');
 
-    // Try to open browser
-    const openCommand = process.platform === 'darwin' ? 'open' :
-                       process.platform === 'win32' ? 'start' :
-                       'xdg-open';
+    const url = 'https://megallm.io';
 
     try {
-      const { exec } = await import('child_process');
-      exec(`${openCommand} https://megallm.io`);
-    } catch (error) {
-      console.log(chalk.yellow('⚠ Could not open browser automatically.'));
+      const openCmd =
+        process.platform === 'darwin'
+          ? 'open'
+          : process.platform === 'win32'
+          ? 'start'
+          : 'xdg-open';
+
+      exec(`${openCmd} ${url}`);
+    } catch (err) {
+      warning('Could not open browser automatically.');
+      info(`Visit manually: ${url}`);
     }
 
-    console.log(chalk.white('═'.repeat(50)));
-    console.log(chalk.green('\n✅ Steps to get your API key:'));
-    console.log(chalk.white('  1. Sign up or log in to MegaLLM'));
-    console.log(chalk.white('  2. Navigate to the API Keys section'));
-    console.log(chalk.white('  3. Create a new API key'));
-    console.log(chalk.white('  4. Copy the key and paste it below\n'));
+    divider(chalk.gray);
+
+    info('Steps to get your API key:');
+    info('1. Sign up / Login');
+    info('2. Go to API Keys section');
+    info('3. Generate new key');
+    info('4. Copy and paste it here');
+
+    divider(chalk.gray);
 
     const continueSetup = await confirm({
-      message: "Ready to enter your API key?",
+      message: 'Ready to enter your API key?',
       default: true
     });
 
     if (!continueSetup) {
-      console.log(chalk.yellow('\n⚠ Setup cancelled. Run this tool again when you have your API key.'));
+      warning('\nSetup cancelled.');
       process.exit(0);
     }
   }
 
   const apiKey = await password({
-    message: `Enter your MegaLLM API key${toolName ? ` for ${toolName}` : ''}:`,
+    message: `Enter API key${toolName ? ` for ${toolName}` : ''}:`,
     mask: '*',
-    validate: (input) => {
-      if (!input || input.trim().length === 0) {
-        return 'API key is required';
-      }
-      if (input.length < 20) {
-        return 'API key seems too short. Please check and try again.';
-      }
+    validate: (val) => {
+      if (!val?.trim()) return 'API key required';
+      if (val.length < 20) return 'Invalid API key length';
       return true;
     }
   });
@@ -130,120 +153,116 @@ export async function promptApiKey(toolName = '') {
   return apiKey.trim();
 }
 
+/* ---------------------------
+   CONFIRM CONFIG
+---------------------------- */
+
 export async function confirmConfiguration(config) {
-  console.log(chalk.cyan('\n📋 Configuration Summary:'));
-  console.log(chalk.white('═'.repeat(40)));
+  title('Configuration Summary');
 
-  if (config.tool) {
-    console.log(chalk.white(`  Tool: ${config.tool}`));
-  }
-  if (config.level) {
-    console.log(chalk.white(`  Level: ${config.level}`));
-  }
-  if (config.baseUrl) {
-    console.log(chalk.white(`  Base URL: ${config.baseUrl}`));
-  }
-  if (config.apiKey) {
-    console.log(chalk.white(`  API Key: ${config.apiKey.substring(0, 10)}...${config.apiKey.slice(-4)}`));
-  }
+  divider();
 
-  console.log(chalk.white('═'.repeat(40)));
+  Object.entries(config).forEach(([key, value]) => {
+    if (!value) return;
 
-  const confirmed = await confirm({
+    let displayValue = value;
+
+    if (key === 'apiKey') {
+      displayValue = `${value.slice(0, 8)}...${value.slice(-4)}`;
+    }
+
+    info(`${key}: ${displayValue}`);
+  });
+
+  divider();
+
+  return await confirm({
     message: 'Proceed with this configuration?',
     default: true
   });
-
-  return confirmed;
 }
 
+/* ---------------------------
+   RETRY PROMPT
+---------------------------- */
+
 export async function promptRetry(message = 'Would you like to try again?') {
-  const retry = await confirm({
+  return await confirm({
     message,
     default: true
   });
-
-  return retry;
 }
 
-export async function promptExistingConfigAction(locations) {
-  console.log(chalk.yellow('\n⚠ MegaLLM configuration already exists!'));
-  console.log(chalk.cyan('\nFound existing configuration in:'));
+/* ---------------------------
+   EXISTING CONFIG HANDLING
+---------------------------- */
 
-  locations.forEach(location => {
-    console.log(chalk.gray(`  • ${location}`));
-  });
+export async function promptExistingConfigAction(locations = []) {
+  warning('\n Existing configuration detected');
 
-  console.log(chalk.white('\n' + '═'.repeat(50)));
+  title('Found at:');
+  locations.forEach(loc => info(`• ${loc}`, chalk.gray));
 
-  const action = await select({
+  divider();
+
+  return await select({
     message: 'What would you like to do?',
     choices: [
       {
-        name: '🔄 Override - Remove old configuration and apply new settings',
+        name: 'Override (replace old config)',
         value: 'override'
       },
       {
-        name: '⏭️  Skip - Keep existing configuration',
+        name: 'Skip (keep existing config)',
         value: 'skip'
       },
       {
-        name: '❌ Cancel - Exit without changes',
+        name: 'Cancel setup',
         value: 'cancel'
       }
     ],
     default: 'skip'
   });
-
-  return action;
 }
 
-/**
- * Prompt the user to confirm removing existing configuration locations.
- *
- * Displays each path provided, warns that the action cannot be undone, and asks the user to confirm.
- * @param {string[]} locations - Array of configuration file paths or locations that will be removed.
- * @returns {boolean} `true` if the user confirms overriding the existing configuration, `false` otherwise.
- */
-export async function confirmOverride(locations) {
-  console.log(chalk.red('\n⚠️  WARNING: This will remove existing configuration from:'));
+/* ---------------------------
+   CONFIRM OVERRIDE
+---------------------------- */
 
-  locations.forEach(location => {
-    console.log(chalk.yellow(`  • ${location}`));
-  });
+export async function confirmOverride(locations = []) {
+  title('Dangerous Action', chalk.red);
 
-  console.log(chalk.white('\n' + '═'.repeat(50)));
-  console.log(chalk.yellow('This action cannot be undone!'));
+  warning('This will remove configuration from:');
+  locations.forEach(loc => info(`• ${loc}`, chalk.yellow));
 
-  const confirmed = await confirm({
-    message: 'Are you sure you want to override the existing configuration?',
+  divider(chalk.red);
+
+  warning('This action cannot be undone!');
+
+  return await confirm({
+    message: 'Are you sure you want to continue?',
     default: false
   });
-
-  return confirmed;
 }
 
-/**
- * Prompt the user to confirm whether they want to set up the Claude Code statusline.
- * @returns {boolean} `true` if the user opts in to set up the statusline, `false` otherwise.
- */
-export async function promptStatuslineSetup() {
-  console.log(chalk.cyan('\n🎨 Claude Code Statusline'));
-  console.log(chalk.gray('═'.repeat(50)));
-  console.log(chalk.white('Enhance your Claude Code terminal with:'));
-  console.log(chalk.gray('  📁 Directory display with ~ abbreviation'));
-  console.log(chalk.gray('  🌿 Git branch information'));
-  console.log(chalk.gray('  🤖 Model info and version'));
-  console.log(chalk.gray('  🧠 Real-time context usage'));
-  console.log(chalk.gray('  💰 Cost tracking and burn rates'));
-  console.log(chalk.gray('  ⌛ Session timer'));
-  console.log(chalk.gray('  📊 Token analytics'));
-  console.log(chalk.gray('═'.repeat(50)));
+/* ---------------------------
+   STATUSLINE SETUP
+---------------------------- */
 
-  const wantsStatusline = await confirm({
-    message: 'Would you like to setup Claude Code statusline?',
+export async function promptStatuslineSetup() {
+  title('🎨 Claude Code Statusline');
+
+  info('Enhance your terminal with:');
+  info('• Git branch info');
+  info('• Model details');
+  info('• Token usage tracking');
+  info('• Cost monitoring');
+  info('• Session analytics');
+
+  divider();
+
+  return await confirm({
+    message: 'Enable statusline setup?',
     default: true
   });
-
-  return wantsStatusline;
 }
