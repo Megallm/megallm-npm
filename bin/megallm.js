@@ -28,6 +28,7 @@ function takeFlag(args, name, hasValue) {
 }
 
 const profile = takeFlag(argv, '--profile', true) || takeFlag(argv, '-p', true);
+const noBrowser = !!takeFlag(argv, '--no-browser');
 const wantsHelp = takeFlag(argv, '--help') || takeFlag(argv, '-h');
 const wantsVersion = takeFlag(argv, '--version') || takeFlag(argv, '-v');
 
@@ -39,7 +40,8 @@ MegaLLM CLI — sign in once, configure Claude Code / Codex / OpenCode.
 Usage:
   megallm                        Open the interactive hub (auto-detects TTY)
   megallm setup                  Run the full setup wizard
-  megallm login [--profile p]    Sign in via the browser (OAuth device flow)
+  megallm login [--profile p]    Sign in via the browser (OAuth, loopback redirect)
+                  [--no-browser]    Force the device-code fallback (headless / SSH)
   megallm logout [--profile p]   Revoke the saved key and clear local creds
   megallm whoami [--profile p]   Show the identity behind the saved key
   megallm status [--profile p]   Plain-text snapshot of identity + tools
@@ -141,7 +143,7 @@ function dieOnError(promise) {
     }
     case 'login': {
       const { runLogin } = await import('../src/commands/login.js');
-      return dieOnError(runLogin({ profile, setCurrent: !!profile }));
+      return dieOnError(runLogin({ profile, setCurrent: !!profile, noBrowser }));
     }
     case 'logout': {
       const { runLogout } = await import('../src/commands/logout.js');

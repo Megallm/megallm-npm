@@ -6,9 +6,9 @@ import { releaseStdinHandoff } from '../tui/stdin.js';
 import { resolveProfileName, setCurrentProfile } from '../auth/store.js';
 import { promptAndConfigureTools } from '../utils/configure-tools.js';
 
-export async function runLogin({ profile, setCurrent, autoConfigure = true } = {}) {
+export async function runLogin({ profile, setCurrent, autoConfigure = true, noBrowser = false } = {}) {
   const name = resolveProfileName(profile);
-  const record = await runInkLogin({ profile: name });
+  const record = await runInkLogin({ profile: name, forceDeviceFlow: noBrowser });
   if (setCurrent) await setCurrentProfile(name);
 
   console.log(chalk.gray(`Credentials saved to ~/.megallm/profiles/${name}/auth.json`));

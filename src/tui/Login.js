@@ -1,27 +1,39 @@
-// Ink screen rendered while the device-flow login is in progress.
-// Shows the verification URL + user code in a big bordered box, with a live
-// spinner that updates with seconds-left and the current state.
+// Ink screen rendered while the OAuth login is in progress.
+//
+// Default flow is RFC 8252 §7.3 loopback (CLI binds 127.0.0.1, opens the
+// consent screen, exchanges the auth code on callback). Falls back to the
+// device-code flow when the env clearly has no desktop browser (SSH boxes,
+// headless Linux), or when the user passes --no-browser.
 import { html, Box, Text, render, useState, useEffect, useApp } from './h.js';
 import { Panel, Banner, BrailleSpinner } from './components.js';
 import { restoreStdinForPrompts } from './stdin.js';
-import { startDeviceFlow, pollForToken, fetchUserInfo, openInBrowser } from '../auth/oauth.js';
+import {
+  startDeviceFlow,
+  pollForToken,
+  fetchUserInfo,
+  openInBrowser,
+  loopbackLogin,
+  canUseLoopback,
+} from '../auth/oauth.js';
 import { listOrgs } from '../auth/api.js';
 import { writeAuth, writeState, ensureMegallmHome } from '../auth/store.js';
 import { OAUTH_CLIENT_ID, OAUTH_SCOPES, DEFAULT_PROFILE } from '../constants.js';
 import { maskApiKey } from '../auth/store.js';
 
 const STATES = {
-  REQUESTING: 'requesting',     // POST /device/code
-  WAITING:    'waiting',        // polling /token
+  STARTING:   'starting',       // deciding which flow + bootstrapping
+  AWAITING:   'awaiting',       // browser open, waiting for callback / approval
   FETCHING:   'fetching',       // userinfo + orgs
   SUCCESS:    'success',
   FAILED:     'failed',
 };
 
-function LoginScreen({ profile, onComplete }) {
+function LoginScreen({ profile, onComplete, forceDeviceFlow = false }) {
   const { exit } = useApp();
-  const [state, setState] = useState(STATES.REQUESTING);
-  const [device, setDevice] = useState(null);
+  const [state, setState] = useState(STATES.STARTING);
+  const [flow, setFlow] = useState(null); // 'loopback' | 'device'
+  const [device, setDevice] = useState(null);   // device-flow data
+  const [authUrl, setAuthUrl] = useState('');   // loopback flow URL (fallback)
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
@@ -37,23 +49,42 @@ function LoginScreen({ profile, onComplete }) {
       try {
         await ensureMegallmHome();
 
-        const dev = await startDeviceFlow({ clientId: OAUTH_CLIENT_ID, scopes: OAUTH_SCOPES });
-        if (cancelled) return;
-        setDevice(dev);
-        setSecondsLeft(dev.expires_in || 900);
-        setState(STATES.WAITING);
+        const useLoopback = !forceDeviceFlow && canUseLoopback();
+        setFlow(useLoopback ? 'loopback' : 'device');
 
-        const url = dev.verification_uri_complete || dev.verification_uri;
-        if (url) openInBrowser(url);
+        let token;
+        if (useLoopback) {
+          // Loopback: server starts, browser opens, we wait for the redirect.
+          setState(STATES.AWAITING);
+          token = await loopbackLogin({
+            clientId: OAUTH_CLIENT_ID,
+            scopes: OAUTH_SCOPES,
+            signal: abort.signal,
+            onAuthorizeUrl: (u) => { if (!cancelled) setAuthUrl(u); },
+          });
+        } else {
+          // Device flow: show user_code + URL, poll until approved.
+          const dev = await startDeviceFlow({
+            clientId: OAUTH_CLIENT_ID,
+            scopes: OAUTH_SCOPES,
+          });
+          if (cancelled) return;
+          setDevice(dev);
+          setSecondsLeft(dev.expires_in || 900);
+          setState(STATES.AWAITING);
 
-        const token = await pollForToken({
-          device_code: dev.device_code,
-          interval: dev.interval || 5,
-          expires_in: dev.expires_in || 900,
-          clientId: OAUTH_CLIENT_ID,
-          signal: abort.signal,
-          onTick: ({ secondsLeft: s }) => { if (!cancelled) setSecondsLeft(s); },
-        });
+          const url = dev.verification_uri_complete || dev.verification_uri;
+          if (url) openInBrowser(url);
+
+          token = await pollForToken({
+            device_code: dev.device_code,
+            interval: dev.interval || 5,
+            expires_in: dev.expires_in || 900,
+            clientId: OAUTH_CLIENT_ID,
+            signal: abort.signal,
+            onTick: ({ secondsLeft: s }) => { if (!cancelled) setSecondsLeft(s); },
+          });
+        }
         if (cancelled) return;
 
         setState(STATES.FETCHING);
@@ -106,18 +137,39 @@ function LoginScreen({ profile, onComplete }) {
   }, []);
 
   // ── Render ──────────────────────────────────────────────────────────────
-  if (state === STATES.REQUESTING) {
+  if (state === STATES.STARTING) {
     return html`
       <${Box} flexDirection="column" paddingY=${1}>
         <${Box}>
           <${BrailleSpinner} name="dna" color="cyan" />
-          <${Text}> Requesting a device code from MegaLLM…</>
+          <${Text}> Starting MegaLLM login…</>
         </>
       </>
     `;
   }
 
-  if (state === STATES.WAITING && device) {
+  if (state === STATES.AWAITING && flow === 'loopback') {
+    return html`
+      <${Box} flexDirection="column" paddingY=${1}>
+        <${Banner} subtitle="Sign in to MegaLLM" />
+        <${Panel} title="Approve this login in your browser" color="cyan" marginBottom=${1}>
+          <${Text} color="gray">  A new browser tab should have opened. If not, paste this URL:</>
+          <${Text} color="white" bold>  ${authUrl}</>
+        </>
+        <${Box}>
+          <${BrailleSpinner} name="pulse" color="cyan" />
+          <${Text}> Waiting for browser approval…</>
+        </>
+        <${Box} marginTop=${1}>
+          <${Text} color="gray">Press </>
+          <${Text} color="white" bold>Ctrl+C</>
+          <${Text} color="gray"> to cancel.</>
+        </>
+      </>
+    `;
+  }
+
+  if (state === STATES.AWAITING && flow === 'device' && device) {
     const url = device.verification_uri || '';
     const code = device.user_code || '';
     return html`
@@ -187,10 +239,10 @@ function LoginScreen({ profile, onComplete }) {
 /**
  * Render the Ink login screen. Resolves with the saved auth record on success.
  *
- * @param {{ profile?: string }} opts
+ * @param {{ profile?: string, forceDeviceFlow?: boolean }} opts
  * @returns {Promise<object>}
  */
-export function runInkLogin({ profile = DEFAULT_PROFILE } = {}) {
+export function runInkLogin({ profile = DEFAULT_PROFILE, forceDeviceFlow = false } = {}) {
   return new Promise((resolve, reject) => {
     // Stash the result locally; the outer promise only settles once Ink has
     // fully unmounted (waitUntilExit) AND stdin has been restored. Resolving
@@ -201,9 +253,11 @@ export function runInkLogin({ profile = DEFAULT_PROFILE } = {}) {
     let savedRec = null;
 
     const { waitUntilExit } = render(
-      html`<${LoginScreen} profile=${profile} onComplete=${(err, rec) => {
-        savedErr = err; savedRec = rec;
-      }} />`,
+      html`<${LoginScreen}
+        profile=${profile}
+        forceDeviceFlow=${forceDeviceFlow}
+        onComplete=${(err, rec) => { savedErr = err; savedRec = rec; }}
+      />`,
       { exitOnCtrlC: true },
     );
 
