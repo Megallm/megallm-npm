@@ -1,7 +1,7 @@
 // OpenCode Configuration Module
 import path from 'path';
 import chalk from 'chalk';
-import ora from 'ora';
+import { brailleOra as ora } from '../utils/spinner.js';
 import {
   readJsonFile,
   writeJsonFile,
@@ -21,7 +21,7 @@ import { getConfigPath } from '../detectors/os.js';
  */
 async function fetchMegaLLMModels(apiKey) {
   try {
-    const response = await fetch('https://ai.megallm.io/models', {
+    const response = await fetch('https://ai.megallm.io/v1/models', {
       headers: {
         'Authorization': `Bearer ${apiKey}`
       }
@@ -283,3 +283,27 @@ async function verifyOpenCodeConfig(configPath) {
 export { configureOpenCode };
 export { verifyOpenCodeConfig };
 export { checkExistingOpenCodeConfig };
+
+/**
+ * Remove the MegaLLM-backed Anthropic provider from OpenCode's config.
+ * Acts only when `provider.anthropic.options.baseURL` points at megallm.
+ *
+ * @returns {Promise<{ removed: boolean, configPath: string | null, reason?: string }>}
+ */
+export async function unconfigureOpenCode(level = 'system') {
+  const configPath = getConfigPath('opencode', level);
+  if (!configPath) return { removed: false, configPath: null, reason: 'no config path' };
+  const cfg = await readJsonFile(configPath);
+  if (!cfg) return { removed: false, configPath, reason: 'no config file' };
+
+  const baseURL = cfg.provider?.anthropic?.options?.baseURL || '';
+  if (!baseURL.includes('megallm')) {
+    return { removed: false, configPath, reason: 'config is not MegaLLM' };
+  }
+
+  if (cfg.provider?.anthropic) delete cfg.provider.anthropic;
+  if (cfg.provider && Object.keys(cfg.provider).length === 0) delete cfg.provider;
+
+  await writeJsonFile(configPath, cfg, true);
+  return { removed: true, configPath };
+}

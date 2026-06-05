@@ -1,7 +1,7 @@
 // Claude Code Configuration Module
 import path from 'path';
 import chalk from 'chalk';
-import ora from 'ora';
+import { brailleOra as ora } from '../utils/spinner.js';
 import {
   readJsonFile,
   writeJsonFile,
@@ -196,3 +196,32 @@ async function verifyClaudeConfig(configPath) {
 export { configureClaude };
 export { verifyClaudeConfig };
 export { checkExistingClaudeConfig };
+
+/**
+ * Surgically remove the MegaLLM-set keys from Claude's settings.json.
+ * Leaves any other user config intact.
+ *
+ * @returns {Promise<{ removed: boolean, configPath: string | null, reason?: string }>}
+ */
+export async function unconfigureClaude(level = 'system') {
+  const configPath = getConfigPath('claude', level);
+  if (!configPath) return { removed: false, configPath: null, reason: 'no config path' };
+  const cfg = await readJsonFile(configPath);
+  if (!cfg) return { removed: false, configPath, reason: 'no config file' };
+  if (!cfg.env) return { removed: false, configPath, reason: 'nothing to remove' };
+
+  const baseUrlIsMegaLLM = cfg.env.ANTHROPIC_BASE_URL === MEGALLM_BASE_URL;
+  const apiKeyIsMegaLLM  = typeof cfg.env.ANTHROPIC_API_KEY === 'string'
+    && cfg.env.ANTHROPIC_API_KEY.startsWith('sk-mega-');
+
+  if (!baseUrlIsMegaLLM && !apiKeyIsMegaLLM) {
+    return { removed: false, configPath, reason: 'config is not MegaLLM' };
+  }
+
+  if (baseUrlIsMegaLLM) delete cfg.env.ANTHROPIC_BASE_URL;
+  if (apiKeyIsMegaLLM)  delete cfg.env.ANTHROPIC_API_KEY;
+  if (Object.keys(cfg.env).length === 0) delete cfg.env;
+
+  await writeJsonFile(configPath, cfg, true);
+  return { removed: true, configPath };
+}

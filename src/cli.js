@@ -2,13 +2,18 @@
 
 // Main CLI for MegaLLM Setup
 import chalk from 'chalk';
-import figlet from 'figlet';
+import gradient from 'gradient-string';
+import { buildWordmarkGrid, playShimmerOnce } from './tui/shimmer.js';
 import { detectOS } from './detectors/os.js';
 import { getInstalledTools, checkToolsStatus, isClaudeCodeInstalled, isCodexInstalled, isOpenCodeInstalled } from './detectors/tools.js';
 import {
   promptToolSelection,
   promptSetupLevel,
   promptApiKey,
+  promptApiKeyPaste,
+  promptAuthMethod,
+  promptOrgSelection,
+  printIdentityBanner,
   confirmConfiguration,
   promptRetry,
   promptExistingConfigAction,
@@ -24,20 +29,133 @@ import { configureStatusline, isStatuslineConfigured } from './configurators/sta
 import { reloadShell, setEnvironmentVariable } from './utils/shell.js';
 import { MEGALLM_BASE_URL, SETUP_LEVELS } from './constants.js';
 import { checkExistingConfiguration, removeEnvVars, detectExistingEnvVars, removeConfigurationFiles } from './utils/envDetector.js';
+import { loginWithBrowser } from './auth/login.js';
+import { readAuth, resolveProfileName, writeAuth, writeState } from './auth/store.js';
+import { fetchUserInfo } from './auth/oauth.js';
+import { listOrgs } from './auth/api.js';
+import { resolveKeyForOrg } from './auth/keys.js';
 
 /**
- * Display the MegaLLM branded ASCII banner and header for the setup tool.
+ * Resolve a usable MegaLLM API key for the wizard.
  *
- * Clears the terminal and prints a colored ASCII title, a subtitle listing supported tools,
- * a brief description, and a separator line.
+ * Order of preference:
+ *   1. If a saved CLI session exists and still works, offer to reuse it.
+ *   2. Otherwise let the user pick "login with browser" or "paste a key".
+ *
+ * The login path also runs the org picker if the account belongs to >1 org
+ * and mints a fresh per-org key so the key the wizard installs is scoped
+ * correctly out of the box.
+ *
+ * @returns {Promise<{ apiKey: string, source: 'login' | 'paste' | 'existing' }>}
+ */
+async function obtainApiKey() {
+  const profile = resolveProfileName();
+  const existing = await readAuth(profile);
+
+  let sessionLabel = '';
+  let sessionStillValid = false;
+  if (existing?.apiKey) {
+    // Quietly verify the saved key still works before offering it.
+    try {
+      const u = await fetchUserInfo(existing.apiKey);
+      if (u) {
+        sessionStillValid = true;
+        sessionLabel = u.email || u.name || existing.user?.email || 'saved session';
+      }
+    } catch { /* network blip — still offer it */ }
+  }
+
+  const method = await promptAuthMethod({
+    hasExistingSession: !!existing?.apiKey && sessionStillValid,
+    sessionLabel,
+  });
+
+  if (method === 'existing' && existing?.apiKey) {
+    printIdentityBanner({
+      user: existing.user,
+      orgName: existing.orgName,
+      apiKey: existing.apiKey,
+    });
+    return { apiKey: existing.apiKey, source: 'existing' };
+  }
+
+  if (method === 'paste') {
+    const k = await promptApiKeyPaste();
+    return { apiKey: k, source: 'paste' };
+  }
+
+  // method === 'login'
+  let record = await loginWithBrowser({ profile });
+
+  // If the account has multiple orgs, let the user pick one and mint a fresh
+  // per-org key. This mirrors AWS CLI's "default profile is your default org".
+  let orgs = [];
+  try { orgs = await listOrgs(record.apiKey); } catch { /* ignore */ }
+
+  if (orgs.length > 1) {
+    const chosenOrgId = await promptOrgSelection(orgs, { defaultOrgId: record.orgId });
+    if (chosenOrgId && chosenOrgId !== record.orgId) {
+      const chosenOrg = orgs.find(o => o.org_id === chosenOrgId);
+      try {
+        // Reuse a cached per-org key if it's still alive on the backend; only
+        // mint a fresh one when no live key exists for this org.
+        const resolved = await resolveKeyForOrg({
+          auth: record,
+          org: { org_id: chosenOrgId, org_name: chosenOrg?.org_name || null },
+          onProgress: (msg) => console.log(chalk.cyan(`\n🔑 ${msg}`)),
+        });
+        if (resolved.apiKey) {
+          if (resolved.reused) {
+            console.log(chalk.gray('  Reused saved key for this org.'));
+          } else {
+            console.log(chalk.green('  Minted a fresh key for this org.'));
+          }
+          record = {
+            ...record,
+            apiKey:    resolved.apiKey,
+            apiKeyId:  resolved.apiKeyId,
+            keyPrefix: resolved.keyPrefix,
+            orgId:     chosenOrgId,
+            orgName:   chosenOrg?.org_name || null,
+            keysByOrg: resolved.keysByOrg,
+          };
+          await writeAuth(record, profile);
+          await writeState({
+            current_org_id: record.orgId,
+            current_org_name: record.orgName,
+            orgs,
+          }, profile);
+        }
+      } catch (err) {
+        console.log(chalk.yellow(`⚠ Could not resolve a per-org key (${err.message}); using your default key.`));
+      }
+    }
+  }
+
+  printIdentityBanner({
+    user: record.user,
+    orgName: record.orgName,
+    apiKey: record.apiKey,
+  });
+  return { apiKey: record.apiKey, source: 'login' };
+}
+
+/**
+ * Render the wizard's branded welcome banner. Plays a one-shot diagonal
+ * shimmer over the cfonts "block" wordmark (top-left → bottom-right), then
+ * prints the gradient rule and tagline under it.
  */
 async function showBanner() {
   console.clear();
-  const banner = figlet.textSync('MegaLLM', { horizontalLayout: 'default' });
-  console.log(chalk.cyan(banner));
-  console.log(chalk.cyan('      Setup Tool for Claude Code, Codex & OpenCode'));
-  console.log(chalk.gray('      Configure your AI tools to use MegaLLM\n'));
-  console.log(chalk.gray('═'.repeat(50)));
+  const grid = buildWordmarkGrid('MegaLLM');
+  await playShimmerOnce(grid, { passes: 1 });
+  const brand = gradient(['#22d3ee', '#3b82f6']);
+  const rule = brand('━'.repeat(70));
+  console.log(rule);
+  console.log('');
+  console.log(' ' + chalk.cyan.bold('✻') + '  ' + chalk.bold('Configure Claude Code, Codex & OpenCode for MegaLLM'));
+  console.log('    ' + chalk.gray('Docs at megallm.io  ·  Run `megallm --help`'));
+  console.log('');
 }
 
 /**
@@ -372,8 +490,8 @@ async function main() {
     console.log(chalk.cyan('\n📋 Configuration Setup'));
     const selectedTool = await promptToolSelection(installedTools);
 
-    if (!selectedTool) {
-      console.log(chalk.yellow('\nSetup cancelled.'));
+    if (!selectedTool || selectedTool === 'skip') {
+      console.log(chalk.gray(`\nSkipped. Run ${chalk.bold('megallm setup')} or ${chalk.bold('megallm link <tool>')} any time.\n`));
       process.exit(0);
     }
 
@@ -388,8 +506,8 @@ async function main() {
       setupLevel = await promptSetupLevel();
     }
 
-    // Step 5: API Key input
-    const apiKey = await promptApiKey();
+    // Step 5: API Key — login with browser, paste, or reuse saved session.
+    const { apiKey } = await obtainApiKey();
 
     // Step 6: Confirm configuration
     const configSummary = {
