@@ -13,7 +13,7 @@ export const MEGALLM_WEB_URL = process.env.MEGALLM_WEB_URL || 'https://megallm.i
 // /dashboard/developers (public app, PKCE-only) and paste the client_id here,
 // or override per-environment with MEGALLM_CLI_CLIENT_ID.
 export const OAUTH_CLIENT_ID =
-  process.env.MEGALLM_CLI_CLIENT_ID || 'mega_pub_cli';
+  process.env.MEGALLM_CLI_CLIENT_ID || 'mega_pub_cea180dfca';
 
 // Scopes the CLI requests at login. All four are needed for the AWS-CLI-style
 // command surface (login, whoami, orgs, switch-org, keys list/revoke).
