@@ -102,7 +102,7 @@ export function ToolRow({ label, ok, detail }) {
  */
 export function Banner({
   subtitle = 'Sign in once. Use Claude Code, Codex, OpenCode.',
-  hint = 'Docs at megallm.io  ·  /help inside any tool',
+  hint = 'Docs at docs.megallm.io  ·  /help inside any tool',
 } = {}) {
   const rule = BRAND_GRADIENT('━'.repeat(WORDMARK_W));
   return html`
@@ -124,6 +124,3 @@ export function Banner({
 export function PanelLoading({ label }) {
   return html`<${Text} color="gray">  ${label}…</>`;
 }
-
-
-
