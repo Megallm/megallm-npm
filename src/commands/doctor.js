@@ -254,15 +254,16 @@ export async function runDoctor({ profile } = {}) {
   console.log('');
   if (r.fails === 0 && r.warns === 0) {
     console.log(chalk.green.bold('Everything looks good. ✨'));
-  } else {
-    console.log(`${r.fails ? chalk.red.bold(`${r.fails} failure(s)`) : ''}` +
-                `${r.fails && r.warns ? '  ' : ''}` +
-                `${r.warns ? chalk.yellow.bold(`${r.warns} warning(s)`) : ''}`);
-    if (r.fails > 0) {
-      console.log(chalk.gray('\nTip: many of these can be auto-repaired with `megallm doctor fix`.'));
-      process.exit(1);
-    }
+    return 0;
   }
+  console.log(`${r.fails ? chalk.red.bold(`${r.fails} failure(s)`) : ''}` +
+              `${r.fails && r.warns ? '  ' : ''}` +
+              `${r.warns ? chalk.yellow.bold(`${r.warns} warning(s)`) : ''}`);
+  if (r.fails > 0) {
+    console.log(chalk.gray('\nTip: many of these can be auto-repaired with `megallm doctor fix`.'));
+    return 1;
+  }
+  return 0;
 }
 
 // ── doctor fix ─────────────────────────────────────────────────────────────
@@ -288,7 +289,7 @@ export async function runDoctorFix({ profile } = {}) {
   if (!auth?.apiKey) {
     console.log(`  ${FAIL} No saved credentials for profile ${chalk.white(profileName)}`);
     console.log(chalk.gray('    Run `megallm login` first, then re-run `megallm doctor fix`.'));
-    process.exit(1);
+    return 1;
   }
 
   // The profile key itself must be alive — we can't push a dead key into the
@@ -297,12 +298,12 @@ export async function runDoctorFix({ profile } = {}) {
   if (probed.status === 'revoked') {
     console.log(`  ${FAIL} Saved profile key ${maskApiKey(auth.apiKey)} is revoked`);
     console.log(chalk.gray('    Run `megallm login` to mint a new key, then re-run `megallm doctor fix`.'));
-    process.exit(1);
+    return 1;
   }
   if (probed.status === 'error') {
     console.log(`  ${FAIL} Could not reach the backend to verify the saved key`);
     console.log(chalk.gray(`    ${probed.message}`));
-    process.exit(1);
+    return 1;
   }
   console.log(`  ${PASS} Profile ${chalk.white(profileName)} → ${probed.info?.email || 'identity confirmed'} (${maskApiKey(auth.apiKey)})\n`);
 
@@ -417,5 +418,5 @@ export async function runDoctorFix({ profile } = {}) {
   if (envWritten > 0) {
     console.log(chalk.yellow('\n⚠ Open a new shell (or `source ~/.zshrc`) so the env vars take effect for tools that read them at startup.'));
   }
-  if (failed > 0) process.exit(1);
+  return failed > 0 ? 1 : 0;
 }

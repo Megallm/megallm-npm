@@ -118,10 +118,10 @@ function dieOnError(promise) {
       const action = argv[1];
       if (action === 'fix') {
         const { runDoctorFix } = await import('../src/commands/doctor.js');
-        return dieOnError(runDoctorFix({ profile }));
+        return dieOnError(runDoctorFix({ profile }).then(code => process.exit(code || 0)));
       }
       const { runDoctor } = await import('../src/commands/doctor.js');
-      return dieOnError(runDoctor({ profile }));
+      return dieOnError(runDoctor({ profile }).then(code => process.exit(code || 0)));
     }
     case 'link': {
       const tool = argv[1];

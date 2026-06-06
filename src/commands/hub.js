@@ -3,8 +3,31 @@
 // matching subcommand handler.  Subcommands run *after* Ink has unmounted, so
 // they get a clean stdout for inquirer / chalk output.
 import chalk from 'chalk';
+import { select } from '@inquirer/prompts';
 import { runInkHub } from '../tui/Hub.js';
 import { releaseStdinHandoff } from '../tui/stdin.js';
+
+// After a subcommand finishes we *don't* auto-reopen the hub — that wipes
+// the output the user just produced. Show an explicit prompt instead.
+// Returns true to loop back into the hub, false to exit.
+async function promptBackOrExit() {
+  console.log('');
+  try {
+    const choice = await select({
+      message: 'Done. What next?',
+      default: 'back',
+      choices: [
+        { name: 'Back to menu', value: 'back' },
+        { name: 'Exit',         value: 'exit' },
+      ],
+    });
+    return choice === 'back';
+  } catch (err) {
+    // Ctrl+C / ESC inside the prompt → treat as exit.
+    if (err && err.message && err.message.includes('User force closed')) return false;
+    throw err;
+  }
+}
 
 export async function runHub({ profile } = {}) {
   while (true) {
@@ -59,10 +82,11 @@ export async function runHub({ profile } = {}) {
         return;
     }
 
-    console.log('');
-    console.log(chalk.gray('Press Ctrl+C to quit, or wait — opening hub again…\n'));
-    // Brief pause so the user can read the previous output before the hub
-    // re-renders and clears the screen-region above.
-    await new Promise(r => setTimeout(r, 700));
+    const goBack = await promptBackOrExit();
+    if (!goBack) {
+      console.log(chalk.gray('\nBye 👋\n'));
+      releaseStdinHandoff();
+      return;
+    }
   }
 }
