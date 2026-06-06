@@ -128,6 +128,42 @@ function getEnvironmentVariable(key) {
   return process.env[key] || null;
 }
 
+/**
+ * Read the persisted value of an env var from the user's shell rc file.
+ * Looks for bash/zsh `export NAME=VALUE` and fish `set -gx NAME VALUE`.
+ * Returns the unquoted value, or null when the var isn't persisted.
+ *
+ * @param {string} key
+ * @returns {string | null}
+ */
+function readPersistedEnvVar(key) {
+  if (os.platform() === 'win32') return null;
+  try {
+    const file = getShellConfigFile();
+    if (!fs.existsSync(file)) return null;
+    const content = fs.readFileSync(file, 'utf8');
+    const escaped = key.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+    // Last match wins — matches setEnvironmentVariable's "replace in place"
+    // behaviour and tolerates duplicates.
+    const bashRe = new RegExp(`^\\s*export\\s+${escaped}=(.+?)\\s*$`, 'gm');
+    const fishRe = new RegExp(`^\\s*set\\s+-gx\\s+${escaped}\\s+(.+?)\\s*$`, 'gm');
+    let last = null;
+    for (const re of [bashRe, fishRe]) {
+      let m;
+      while ((m = re.exec(content)) !== null) last = m[1];
+    }
+    if (last == null) return null;
+    let v = last.trim();
+    if ((v.startsWith('"') && v.endsWith('"')) ||
+        (v.startsWith("'") && v.endsWith("'"))) {
+      v = v.slice(1, -1);
+    }
+    return v;
+  } catch {
+    return null;
+  }
+}
+
 function validateApiKey(apiKey) {
   // Basic validation for API key format
   if (!apiKey || apiKey.trim().length === 0) {
@@ -154,5 +190,6 @@ function getLastNCharacters(str, n = 20) {
 export { reloadShell };
 export { setEnvironmentVariable };
 export { getEnvironmentVariable };
+export { readPersistedEnvVar };
 export { validateApiKey };
 export { getLastNCharacters };

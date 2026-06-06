@@ -66,6 +66,7 @@ function HubScreen({ profile, onPick }) {
         { label: 'Manage API keys',                               value: 'keys' },
         { label: 'Show status',                                   value: 'status' },
         { label: 'Run doctor (diagnose)',                         value: 'doctor' },
+        { label: 'Repair tool configs (doctor fix)',              value: 'doctor-fix' },
         { label: 'Sign out',                                      value: 'logout' },
         { label: 'Exit',                                          value: 'exit' },
       ];

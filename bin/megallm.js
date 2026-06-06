@@ -46,6 +46,7 @@ Usage:
   megallm whoami [--profile p]   Show the identity behind the saved key
   megallm status [--profile p]   Plain-text snapshot of identity + tools
   megallm doctor [--profile p]   Run diagnostic checks on creds, tools, env
+  megallm doctor fix             Auto-repair tool configs that hold a stale key
   megallm orgs   [--profile p]   List organizations you can switch into
   megallm switch-org [<id>]      Switch to an org and mint a fresh per-org key
   megallm keys list [--org id]   List API keys in the active (or given) org
@@ -114,6 +115,11 @@ function dieOnError(promise) {
       return dieOnError(runStatus({ profile }));
     }
     case 'doctor': {
+      const action = argv[1];
+      if (action === 'fix') {
+        const { runDoctorFix } = await import('../src/commands/doctor.js');
+        return dieOnError(runDoctorFix({ profile }));
+      }
       const { runDoctor } = await import('../src/commands/doctor.js');
       return dieOnError(runDoctor({ profile }));
     }

@@ -42,6 +42,11 @@ export async function runHub({ profile } = {}) {
         await runDoctor({ profile });
         break;
       }
+      case 'doctor-fix': {
+        const { runDoctorFix } = await import('./doctor.js');
+        await runDoctorFix({ profile });
+        break;
+      }
       case 'logout': {
         const { runLogout } = await import('./logout.js');
         await runLogout({ profile });
