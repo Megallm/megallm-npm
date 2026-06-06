@@ -1,6 +1,6 @@
 {
   "name": "megallm",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "Sign in once, configure Claude Code / Codex / OpenCode. Interactive Ink-based hub with OAuth device flow, named profiles, and per-org API keys.",
   "main": "src/cli.js",
   "type": "module",
