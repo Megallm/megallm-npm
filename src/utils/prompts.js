@@ -2,6 +2,7 @@
 import { select, input, confirm, password } from '@inquirer/prompts';
 import chalk from 'chalk';
 import { TOOLS, SETUP_LEVELS } from '../constants.js';
+import { maskApiKey } from '../auth/store.js';
 
 /**
  * Prompt the user to choose which tool(s) to configure.
@@ -23,7 +24,8 @@ export async function promptToolSelection(availableTools) {
         { name: 'Claude Code', value: 'claude' },
         { name: 'Codex', value: 'codex' },
         { name: 'Open Code', value: 'opencode' },
-        { name: 'All', value: 'all' }
+        { name: 'All', value: 'all' },
+        { name: 'Skip — exit setup', value: 'skip' },
       ]
     });
 
@@ -40,6 +42,7 @@ export async function promptToolSelection(availableTools) {
   } else if (availableTools.length == 3) {
     choices.push({ name: 'Configure All', value: 'all' });
   }
+  choices.push({ name: 'Skip — exit setup', value: 'skip' });
 
   const selectedTool = await select({
     message: 'Which tool would you like to configure?',
@@ -246,4 +249,85 @@ export async function promptStatuslineSetup() {
   });
 
   return wantsStatusline;
+}
+
+/**
+ * Choose how to obtain a MegaLLM API key for the wizard:
+ *   - 'login'    : run the OAuth device flow in the browser
+ *   - 'paste'    : paste an existing key
+ *   - 'existing' : reuse a saved CLI session (only offered when one exists)
+ *
+ * @param {{ hasExistingSession?: boolean, sessionLabel?: string }} opts
+ */
+export async function promptAuthMethod({ hasExistingSession = false, sessionLabel = '' } = {}) {
+  const choices = [
+    {
+      name: '🔐  Login with browser (recommended)',
+      value: 'login',
+      description: 'Sign in to megallm.io and we will create a key for you'
+    },
+    {
+      name: '🔑  Paste an existing API key',
+      value: 'paste',
+      description: 'Use a key you already created in the dashboard'
+    },
+  ];
+  if (hasExistingSession) {
+    choices.unshift({
+      name: `✅  Use saved session${sessionLabel ? ` (${sessionLabel})` : ''}`,
+      value: 'existing',
+      description: 'Reuse the credentials saved in ~/.megallm'
+    });
+  }
+
+  return select({
+    message: 'How would you like to authenticate?',
+    choices,
+    default: hasExistingSession ? 'existing' : 'login',
+  });
+}
+
+/**
+ * Pick an org from a list returned by /api/oauth/orgs.
+ * Returns the chosen `org_id` (string) or null if the user cancels.
+ */
+export async function promptOrgSelection(orgs, { defaultOrgId } = {}) {
+  if (!orgs || orgs.length === 0) return null;
+  if (orgs.length === 1) return orgs[0].org_id;
+
+  const choices = orgs.map(o => ({
+    name: o.role ? `${o.org_name}  ${chalk.gray('· ' + o.role)}` : o.org_name,
+    value: o.org_id,
+  }));
+
+  return select({
+    message: 'Choose an organization:',
+    choices,
+    default: defaultOrgId || choices[0].value,
+  });
+}
+
+/**
+ * Plain-paste API key prompt (no browser). Used when the user picks 'paste'
+ * in promptAuthMethod, and as the fallback for environments without a browser.
+ */
+export async function promptApiKeyPaste(toolName = '') {
+  const apiKey = await password({
+    message: `Paste your MegaLLM API key${toolName ? ` for ${toolName}` : ''}:`,
+    mask: '*',
+    validate: (value) => {
+      if (!value || value.trim().length === 0) return 'API key is required';
+      if (value.length < 20) return 'API key seems too short. Please check and try again.';
+      return true;
+    },
+  });
+  return apiKey.trim();
+}
+
+/** Display a one-line "signed in as …" banner after a successful login. */
+export function printIdentityBanner({ user, orgName, apiKey }) {
+  const who = user?.name || user?.email || 'MegaLLM user';
+  const where = orgName ? chalk.gray(` · org: ${orgName}`) : '';
+  const key = apiKey ? chalk.gray(` · key: ${maskApiKey(apiKey)}`) : '';
+  console.log(chalk.green(`\n✓ Signed in as ${chalk.bold(who)}${where}${key}`));
 }

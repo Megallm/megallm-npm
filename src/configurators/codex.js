@@ -1,7 +1,7 @@
 // Codex Configuration Module
 import path from 'path';
 import chalk from 'chalk';
-import ora from 'ora';
+import { brailleOra as ora } from '../utils/spinner.js';
 import {
   readTomlFile,
   writeTomlFile,
@@ -219,3 +219,29 @@ export { configureCodex };
 export { verifyCodexConfig };
 export { isWindsurf };
 export { checkExistingCodexConfig };
+
+/**
+ * Remove the megallm provider from Codex's TOML config.
+ * Only acts when `model_provider === 'megallm'` to avoid clobbering other setups.
+ *
+ * @returns {Promise<{ removed: boolean, configPath: string | null, reason?: string }>}
+ */
+export async function unconfigureCodex() {
+  const configPath = getConfigPath('codex', 'system');
+  if (!configPath) return { removed: false, configPath: null, reason: 'no config path' };
+  const cfg = await readTomlFile(configPath);
+  if (!cfg) return { removed: false, configPath, reason: 'no config file' };
+
+  const isMega = cfg.model_provider === 'megallm'
+    || cfg.model_providers?.megallm?.base_url?.includes('megallm');
+  if (!isMega) return { removed: false, configPath, reason: 'config is not MegaLLM' };
+
+  if (cfg.model_provider === 'megallm') delete cfg.model_provider;
+  if (cfg.model_providers?.megallm)     delete cfg.model_providers.megallm;
+  if (cfg.model_providers && Object.keys(cfg.model_providers).length === 0) {
+    delete cfg.model_providers;
+  }
+
+  await writeTomlFile(configPath, cfg, true);
+  return { removed: true, configPath };
+}
